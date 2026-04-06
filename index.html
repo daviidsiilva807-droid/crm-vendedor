@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <title>Entrada - Controle de seção</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Bem-vindo ao Controle de seção</h1>
+    <h2>Entrada do Sistema</h2>
+
+    <input type="text" id="login" placeholder="Digite seu login">
+    <input type="password" id="senha" placeholder="Digite sua senha">
+    <button type="button" onclick="entrar()">Entrar</button>
+  </div>
+
+  <script src="auth-db.js"></script>
+  <script>
+    AuthDB.garantirAdminPadrao();
+
+    const sessaoAtual = AuthDB.obterSessao();
+    if (sessaoAtual) {
+      window.location.href = "dashboard.html";
+    }
+
+    function entrar() {
+      const login = document.getElementById("login").value.trim();
+      const senha = document.getElementById("senha").value;
+
+      if (login === "" || senha.trim() === "") {
+        alert("Por favor, preencha login e senha.");
+        return;
+      }
+
+      const resultado = AuthDB.autenticar(login, senha);
+      if (!resultado.ok) {
+        alert(resultado.mensagem);
+        return;
+      }
+
+      window.location.href = "dashboard.html";
+    }
+  </script>
+</body>
+</html>
+

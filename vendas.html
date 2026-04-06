@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <title>Metas de Vendas</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.28)), url("img/logoadidas.png") center / cover fixed no-repeat;
+      color: #1f2937;
+      padding: 14px;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 5vw, 2rem);
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: #4b5563;
+      font-size: 14px;
+    }
+
+    .plan-banner {
+      margin-top: 12px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, #fef3c7, #fff7ed);
+      border: 1px solid #fdba74;
+      color: #7c2d12;
+      line-height: 1.45;
+    }
+
+    .plan-banner strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .inline-note {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-top: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .field input {
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 15px;
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      min-height: 44px;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: #0f766e;
+      color: #fff;
+    }
+
+    .secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .summary-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      margin-bottom: 14px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      background: #1d4ed8;
+      color: #fff;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .summary-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .summary-card.highlight {
+      border-color: #0f766e;
+      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.14);
+    }
+
+    .summary-card.meta-status {
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .summary-card.meta-status.status-empty {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .summary-card.meta-status.status-low {
+      background: #fff7ed;
+      border-color: #fdba74;
+    }
+
+    .summary-card.meta-status.status-mid {
+      background: #fefce8;
+      border-color: #facc15;
+    }
+
+    .summary-card.meta-status.status-near {
+      background: #ecfeff;
+      border-color: #67e8f9;
+    }
+
+    .summary-card.meta-status.status-hit {
+      background: #ecfdf5;
+      border-color: #86efac;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+    }
+
+    .summary-value {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #111827;
+    }
+
+    .summary-note {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #475569;
+    }
+
+    .table-wrap {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    th {
+      background: #f8fafc;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: #475569;
+    }
+
+    tr.status-low {
+      background: #fff7ed;
+    }
+
+    tr.status-mid {
+      background: #fefce8;
+    }
+
+    tr.status-near {
+      background: #ecfeff;
+    }
+
+    tr.status-hit {
+      background: #ecfdf5;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .pill.ok { background: #bbf7d0; color: #14532d; }
+    .pill.wait { background: #e2e8f0; color: #334155; }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 10px; }
+      table { font-size: 13px; }
+      th, td { padding: 8px; }
+      .actions button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back-link" href="dashboard.html">&#8592; Voltar ao Dashboard</a>
+    <div class="header">
+      <h1>&#128176; Area do Vendedor - Meta Mensal</h1>
+      <p class="subtitle">Preencha seu faturamento atual e acompanhe comissao, valor diario necessario e distancia para a proxima meta.</p>
+      <div id="planBanner" class="plan-banner"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="faturamentoAtual">Faturamento atual no mes (R$)</label>
+          <input id="faturamentoAtual" type="text" inputmode="decimal" value="0,00" placeholder="Ex: 35.000,00">
+        </div>
+        <div class="field">
+          <label for="metaPessoal">Meta que deseja atingir (R$)</label>
+          <input id="metaPessoal" type="text" inputmode="decimal" value="40.000,00" placeholder="Ex: 56.000,00">
+          <div id="objetivoNota" class="inline-note">Meta de objetivo nao fixada.</div>
+        </div>
+        <div class="field">
+          <label for="diasRestantes">Dias restantes no mes</label>
+          <input id="diasRestantes" type="number" min="1" step="1" value="1">
+        </div>
+        <div class="field">
+          <label for="valorMedioVenda">Valor medio por venda (R$)</label>
+          <input id="valorMedioVenda" type="text" inputmode="decimal" value="0,00" placeholder="Ex: 120,00">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" type="button" onclick="calcularMetas()">Calcular metas</button>
+        <button class="secondary" type="button" onclick="preencherDiasAutomatico()">Atualizar dias automaticamente</button>
+        <button class="secondary" type="button" onclick="alternarObjetivoFixo()">Fixar objetivo</button>
+      </div>
+      <p class="hint">Tabela de comissao: 40 mil = 0,50% | 46 mil = 1% | 50 mil = 1,2% | 56 mil = 1,5% | 64 mil = 2% | 72 mil = 2,25% | 80 mil = 2,5% | 88 mil = 2,6% | 96 mil = 2,7% | 104 mil = 2,8% | 112 mil = 2,9%</p>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card highlight">
+        <div class="summary-label">Comissao total estimada</div>
+        <div id="comissaoAtual" class="summary-value">R$ 0,00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Proxima meta oficial</div>
+        <div id="proximaMeta" class="summary-value">-</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Falta para proxima meta</div>
+        <div id="faltaProxima" class="summary-value">R$ 0,00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Valor por dia para meta pessoal</div>
+        <div id="porDiaMetaPessoal" class="summary-value">R$ 0,00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Comissao por venda media</div>
+        <div id="comissaoPorVenda" class="summary-value">R$ 0,00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Objetivo fixado</div>
+        <div id="objetivoFixado" class="summary-value">Nenhum objetivo fixado</div>
+      </div>
+      <div id="metaPessoalCard" class="summary-card meta-status status-empty">
+        <div class="summary-label">Status da meta pessoal</div>
+        <div id="metaPessoalStatus" class="summary-value">Sem meta definida</div>
+        <div id="metaPessoalProgresso" class="summary-note">Defina uma meta para acompanhar por cor.</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Meta</th>
+            <th>Percentual</th>
+            <th>Falta para atingir</th>
+            <th>Necessario por dia</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="metasBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="auth-db.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+    const OBJETIVO_FIXO_KEY = `controleSecao_objetivo_fixo_v1_${sessao.login}`;
+    const VENDAS_FORM_KEY = `controleSecao_vendas_form_v1_${sessao.login}`;
+
+    const metas = [
+      { valor: 40000, percentual: 0.5 },
+      { valor: 46000, percentual: 1.0 },
+      { valor: 50000, percentual: 1.2 },
+      { valor: 56000, percentual: 1.5 },
+      { valor: 64000, percentual: 2.0 },
+      { valor: 72000, percentual: 2.25 },
+      { valor: 80000, percentual: 2.5 },
+      { valor: 88000, percentual: 2.6 },
+      { valor: 96000, percentual: 2.7 },
+      { valor: 104000, percentual: 2.8 },
+      { valor: 112000, percentual: 2.9 }
+    ];
+
+    function formatarMoeda(valor) {
+      return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    }
+
+    function formatarNumeroBR(valor) {
+      return Number(valor || 0).toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function normalizarMoedaParaNumero(valor) {
+      const somenteDigitos = String(valor || "").replace(/\D/g, "");
+      if (!somenteDigitos) {
+        return 0;
+      }
+
+      return Number(somenteDigitos) / 100;
+    }
+
+    function obterValorCampoMoeda(idCampo) {
+      const campo = document.getElementById(idCampo);
+      return Math.max(0, normalizarMoedaParaNumero(campo.value));
+    }
+
+    function aplicarMascaraMoeda(campo) {
+      const valor = normalizarMoedaParaNumero(campo.value);
+      campo.value = formatarNumeroBR(valor);
+    }
+
+    function configurarCamposMoeda() {
+      const idsMoeda = ["faturamentoAtual", "metaPessoal", "valorMedioVenda"];
+
+      idsMoeda.forEach((idCampo) => {
+        const campo = document.getElementById(idCampo);
+        if (!campo) {
+          return;
+        }
+
+        aplicarMascaraMoeda(campo);
+        campo.addEventListener("input", () => {
+          aplicarMascaraMoeda(campo);
+          calcularMetas();
+          salvarEstadoFormulario();
+        });
+        campo.addEventListener("blur", () => {
+          aplicarMascaraMoeda(campo);
+          salvarEstadoFormulario();
+        });
+      });
+    }
+
+    function formatarPercentual(valor) {
+      return `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`;
+    }
+
+    function formatarData(dataISO) {
+      if (!dataISO) {
+        return "-";
+      }
+
+      return new Date(dataISO).toLocaleDateString("pt-BR");
+    }
+
+    function carregarEstadoFormulario() {
+      try {
+        const bruto = localStorage.getItem(VENDAS_FORM_KEY);
+        if (!bruto) {
+          return null;
+        }
+
+        const estado = JSON.parse(bruto);
+        return estado && typeof estado === "object" ? estado : null;
+      } catch (erro) {
+        return null;
+      }
+    }
+
+    function salvarEstadoFormulario() {
+      const estado = {
+        faturamentoAtual: obterValorCampoMoeda("faturamentoAtual"),
+        metaPessoal: obterValorCampoMoeda("metaPessoal"),
+        valorMedioVenda: obterValorCampoMoeda("valorMedioVenda"),
+        diasRestantes: Math.max(1, Number(document.getElementById("diasRestantes").value) || 1),
+        atualizadoEm: new Date().toISOString()
+      };
+
+      localStorage.setItem(VENDAS_FORM_KEY, JSON.stringify(estado));
+    }
+
+    function aplicarEstadoFormulario() {
+      const estado = carregarEstadoFormulario();
+      if (!estado) {
+        return false;
+      }
+
+      document.getElementById("faturamentoAtual").value = formatarNumeroBR(Math.max(0, Number(estado.faturamentoAtual) || 0));
+      document.getElementById("metaPessoal").value = formatarNumeroBR(Math.max(0, Number(estado.metaPessoal) || 0));
+      document.getElementById("valorMedioVenda").value = formatarNumeroBR(Math.max(0, Number(estado.valorMedioVenda) || 0));
+      document.getElementById("diasRestantes").value = Math.max(1, Number(estado.diasRestantes) || 1);
+
+      return true;
+    }
+
+    function carregarObjetivoFixo() {
+      const bruto = localStorage.getItem(OBJETIVO_FIXO_KEY);
+      if (!bruto) {
+        return null;
+      }
+
+      try {
+        const dados = JSON.parse(bruto);
+        const valor = Math.max(0, Number(dados?.valor) || 0);
+        return valor > 0 ? dados : null;
+      } catch (erro) {
+        return null;
+      }
+    }
+
+    function salvarObjetivoFixo(valor) {
+      const dados = {
+        valor: Math.max(0, Number(valor) || 0),
+        criadoEm: new Date().toISOString()
+      };
+      localStorage.setItem(OBJETIVO_FIXO_KEY, JSON.stringify(dados));
+      return dados;
+    }
+
+    function limparObjetivoFixo() {
+      localStorage.removeItem(OBJETIVO_FIXO_KEY);
+    }
+
+    function atualizarInterfaceObjetivoFixo() {
+      const objetivo = carregarObjetivoFixo();
+      const inputMeta = document.getElementById("metaPessoal");
+      const nota = document.getElementById("objetivoNota");
+      const resumo = document.getElementById("objetivoFixado");
+      const botao = document.querySelector('button[onclick="alternarObjetivoFixo()"]');
+
+      if (!objetivo) {
+        inputMeta.readOnly = false;
+        nota.textContent = "Meta de objetivo nao fixada.";
+        resumo.textContent = "Nenhum objetivo fixado";
+        botao.textContent = "Fixar objetivo";
+        return;
+      }
+
+      inputMeta.value = formatarNumeroBR(objetivo.valor);
+      inputMeta.readOnly = true;
+      nota.textContent = `Meta fixada em ${formatarMoeda(objetivo.valor)}.`;
+      resumo.textContent = formatarMoeda(objetivo.valor);
+      botao.textContent = "Desfixar objetivo";
+    }
+
+    function alternarObjetivoFixo() {
+      const objetivoAtual = carregarObjetivoFixo();
+
+      if (objetivoAtual) {
+        limparObjetivoFixo();
+        atualizarInterfaceObjetivoFixo();
+        salvarEstadoFormulario();
+        calcularMetas();
+        return;
+      }
+
+      const valor = obterValorCampoMoeda("metaPessoal");
+      if (valor <= 0) {
+        alert("Informe uma meta de objetivo maior que zero antes de fixar.");
+        return;
+      }
+
+      salvarObjetivoFixo(valor);
+      atualizarInterfaceObjetivoFixo();
+      salvarEstadoFormulario();
+      calcularMetas();
+    }
+
+    function atualizarBannerPlano() {
+      if (!sessao) {
+        return;
+      }
+
+      const status = AuthDB.obterStatusUsuario(sessao.login);
+      const banner = document.getElementById("planBanner");
+
+      if (!status) {
+        banner.textContent = "";
+        return;
+      }
+
+      if (status.vitalicio) {
+        banner.innerHTML = `<strong>Usuario vitalicio. Acesso liberado sem vencimento.</strong>Nao ha prazo de expiracao para este usuario.`;
+        return;
+      }
+
+      const valorPlano = status.planoDias === 90 ? 50 : 20;
+      banner.innerHTML = status.ativo
+        ? `<strong>Plano ativo de ${status.planoDias} dias por ${formatarMoeda(valorPlano)}.</strong>Faltam ${status.diasRestantes} dia(s) para expirar. Vencimento em ${formatarData(status.assinaturaFimEm)}.`
+        : `<strong>${status.mensagem}</strong>Entre em contato para regularizar o acesso.`;
+    }
+
+    function calcularDiasRestantesMes() {
+      const hoje = new Date();
+      const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+      const umDia = 1000 * 60 * 60 * 24;
+      const diferenca = Math.ceil((ultimoDia - hoje) / umDia) + 1;
+      return Math.max(1, diferenca);
+    }
+
+    function preencherDiasAutomatico() {
+      document.getElementById("diasRestantes").value = calcularDiasRestantesMes();
+      salvarEstadoFormulario();
+      calcularMetas();
+    }
+
+    function calcularMetas() {
+      const faturamentoAtual = obterValorCampoMoeda("faturamentoAtual");
+      const metaPessoal = obterValorCampoMoeda("metaPessoal");
+      const diasRestantes = Math.max(1, Number(document.getElementById("diasRestantes").value) || 1);
+      const valorMedioVenda = obterValorCampoMoeda("valorMedioVenda");
+      const cardMeta = document.getElementById("metaPessoalCard");
+      const textoStatusMeta = document.getElementById("metaPessoalStatus");
+      const textoProgressoMeta = document.getElementById("metaPessoalProgresso");
+
+      let faixaAtual = null;
+      for (const meta of metas) {
+        if (faturamentoAtual >= meta.valor) {
+          faixaAtual = meta;
+        }
+      }
+
+      const percentualAtual = faixaAtual ? faixaAtual.percentual : 0;
+      const comissaoAtual = faturamentoAtual * (percentualAtual / 100);
+
+      let proximaMeta = null;
+      for (const meta of metas) {
+        if (faturamentoAtual < meta.valor) {
+          proximaMeta = meta;
+          break;
+        }
+      }
+
+      const faltaParaProxima = proximaMeta ? Math.max(0, proximaMeta.valor - faturamentoAtual) : 0;
+      const faltaMetaPessoal = Math.max(0, metaPessoal - faturamentoAtual);
+      const porDiaMetaPessoal = faltaMetaPessoal / diasRestantes;
+      const comissaoPorVenda = valorMedioVenda * (percentualAtual / 100);
+      const progressoMetaPessoal = metaPessoal > 0 ? Math.min(100, (faturamentoAtual / metaPessoal) * 100) : 0;
+
+      document.getElementById("comissaoAtual").textContent = `${formatarMoeda(comissaoAtual)} (${formatarPercentual(percentualAtual)})`;
+      document.getElementById("proximaMeta").textContent = proximaMeta ? `${formatarMoeda(proximaMeta.valor)} (${formatarPercentual(proximaMeta.percentual)})` : "Todas as metas oficiais atingidas";
+      document.getElementById("faltaProxima").textContent = formatarMoeda(faltaParaProxima);
+      document.getElementById("porDiaMetaPessoal").textContent = formatarMoeda(porDiaMetaPessoal);
+      document.getElementById("comissaoPorVenda").textContent = valorMedioVenda > 0 ? `${formatarMoeda(comissaoPorVenda)} por venda` : "Informe o valor medio da venda";
+
+      cardMeta.className = "summary-card meta-status";
+      if (metaPessoal <= 0) {
+        cardMeta.classList.add("status-empty");
+        textoStatusMeta.textContent = "Sem meta definida";
+        textoProgressoMeta.textContent = "Defina uma meta para acompanhar por cor.";
+      } else if (progressoMetaPessoal >= 100) {
+        cardMeta.classList.add("status-hit");
+        textoStatusMeta.textContent = "Meta atingida";
+        textoProgressoMeta.textContent = `${formatarNumeroBR(progressoMetaPessoal)}% concluido`;
+      } else if (progressoMetaPessoal >= 85) {
+        cardMeta.classList.add("status-near");
+        textoStatusMeta.textContent = "Quase la";
+        textoProgressoMeta.textContent = `${formatarNumeroBR(progressoMetaPessoal)}% concluido`;
+      } else if (progressoMetaPessoal >= 50) {
+        cardMeta.classList.add("status-mid");
+        textoStatusMeta.textContent = "Progresso bom";
+        textoProgressoMeta.textContent = `${formatarNumeroBR(progressoMetaPessoal)}% concluido`;
+      } else {
+        cardMeta.classList.add("status-low");
+        textoStatusMeta.textContent = "Inicio da meta";
+        textoProgressoMeta.textContent = `${formatarNumeroBR(progressoMetaPessoal)}% concluido`;
+      }
+
+      const body = document.getElementById("metasBody");
+      body.innerHTML = "";
+
+      metas.forEach((meta) => {
+        const falta = Math.max(0, meta.valor - faturamentoAtual);
+        const porDia = falta / diasRestantes;
+        const atingida = falta === 0;
+        const percentualAtingido = meta.valor > 0 ? Math.min(100, (faturamentoAtual / meta.valor) * 100) : 0;
+
+        const tr = document.createElement("tr");
+        if (percentualAtingido >= 100) {
+          tr.className = "status-hit";
+        } else if (percentualAtingido >= 85) {
+          tr.className = "status-near";
+        } else if (percentualAtingido >= 50) {
+          tr.className = "status-mid";
+        } else {
+          tr.className = "status-low";
+        }
+
+        tr.innerHTML = `
+          <td>${formatarMoeda(meta.valor)}</td>
+          <td>${formatarPercentual(meta.percentual)}</td>
+          <td>${formatarMoeda(falta)}</td>
+          <td>${formatarMoeda(porDia)}</td>
+          <td><span class="pill ${atingida ? "ok" : "wait"}">${atingida ? "Atingida" : "Falta atingir"}</span></td>
+        `;
+
+        body.appendChild(tr);
+      });
+
+      salvarEstadoFormulario();
+    }
+
+    document.getElementById("diasRestantes").addEventListener("input", () => {
+      calcularMetas();
+      salvarEstadoFormulario();
+    });
+    configurarCamposMoeda();
+
+    const estadoFormularioCarregado = aplicarEstadoFormulario();
+    atualizarInterfaceObjetivoFixo();
+    atualizarBannerPlano();
+
+    if (!estadoFormularioCarregado) {
+      preencherDiasAutomatico();
+    } else {
+      calcularMetas();
+    }
+  </script>
+</body>
+</html>
