@@ -1,356 +1,63 @@
 (function () {
   const DB_KEY = "controleSecao_usuarios_v1";
   const SESSION_KEY = "controleSecao_sessao_v1";
-  const LOGIN_ATTEMPTS_KEY = "controleSecao_login_tentativas_v1";
-  const ADMIN_LOGIN = "daviidsiilva807";
-  const ADMIN_SENHA = "L4ndeH4ck@100";
-  const LOGIN_REGEX = /^[a-z0-9._-]{3,30}$/i;
-  const MAX_LOGIN_TENTATIVAS = 5;
-  const BLOQUEIO_MINUTOS = 15;
-  const SESSAO_TTL_HORAS = 8;
-  const DIA_EM_MS = 1000 * 60 * 60 * 24;
-  const PLANOS = {
-    30: { dias: 30, valor: 20 },
-    90: { dias: 90, valor: 50 }
-  };
+  const MIGRATION_DONE_KEY = "controleSecao_migracao_api_v1";
+
+  const API_BASE = window.location.protocol === "file:"
+    ? "http://localhost:3000/api"
+    : `${window.location.origin}/api`;
 
   function normalizarLogin(login) {
     return (login || "").trim().toLowerCase();
   }
 
-  function loginValido(login) {
-    return LOGIN_REGEX.test(normalizarLogin(login));
-  }
-
-  function carregarTentativasLogin() {
-    const bruto = localStorage.getItem(LOGIN_ATTEMPTS_KEY);
-    if (!bruto) {
-      return {};
-    }
-
-    try {
-      const dados = JSON.parse(bruto);
-      return dados && typeof dados === "object" ? dados : {};
-    } catch (erro) {
-      return {};
-    }
-  }
-
-  function salvarTentativasLogin(tentativas) {
-    localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(tentativas));
-  }
-
-  function limparTentativasExpiradas() {
-    const tentativas = carregarTentativasLogin();
-    const agora = Date.now();
-
-    Object.keys(tentativas).forEach((login) => {
-      const item = tentativas[login] || {};
-      if (!item.bloqueadoAte || Number(item.bloqueadoAte) < agora) {
-        delete tentativas[login];
-      }
-    });
-
-    salvarTentativasLogin(tentativas);
-  }
-
-  function obterStatusTentativa(login) {
-    limparTentativasExpiradas();
-    const tentativas = carregarTentativasLogin();
-    return tentativas[normalizarLogin(login)] || { erros: 0, bloqueadoAte: 0 };
-  }
-
-  function registrarFalhaLogin(login) {
-    const loginNormalizado = normalizarLogin(login);
-    const tentativas = carregarTentativasLogin();
-    const atual = tentativas[loginNormalizado] || { erros: 0, bloqueadoAte: 0 };
-    const erros = Number(atual.erros || 0) + 1;
-
-    if (erros >= MAX_LOGIN_TENTATIVAS) {
-      atual.erros = 0;
-      atual.bloqueadoAte = Date.now() + (BLOQUEIO_MINUTOS * 60 * 1000);
-    } else {
-      atual.erros = erros;
-      atual.bloqueadoAte = 0;
-    }
-
-    tentativas[loginNormalizado] = atual;
-    salvarTentativasLogin(tentativas);
-  }
-
-  function limparFalhasLogin(login) {
-    const loginNormalizado = normalizarLogin(login);
-    const tentativas = carregarTentativasLogin();
-    if (tentativas[loginNormalizado]) {
-      delete tentativas[loginNormalizado];
-      salvarTentativasLogin(tentativas);
-    }
-  }
-
-  function obterPlanoPadrao(dias) {
-    return PLANOS[dias] || PLANOS[30];
-  }
-
-  function adicionarDias(data, dias) {
-    const dataBase = new Date(data);
-    dataBase.setDate(dataBase.getDate() + dias);
-    return dataBase.toISOString();
-  }
-
-  function calcularDiasRestantes(dataFim) {
-    if (!dataFim) {
-      return 0;
-    }
-
-    const diferenca = new Date(dataFim).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diferenca / DIA_EM_MS));
-  }
-
-  function sincronizarVencimentos(usuarios) {
-    const agora = Date.now();
-
-    usuarios.forEach((usuario) => {
-      if (normalizarLogin(usuario.login) === normalizarLogin(ADMIN_LOGIN)) {
-        usuario.ativo = true;
-        usuario.vitalicio = true;
-        usuario.planoDias = null;
-        usuario.planoValor = null;
-        usuario.assinaturaInicioEm = usuario.assinaturaInicioEm || new Date().toISOString();
-        usuario.assinaturaFimEm = null;
-        usuario.motivoBloqueio = "";
-        return;
-      }
-
-      if (usuario.ativo && usuario.assinaturaFimEm && new Date(usuario.assinaturaFimEm).getTime() < agora) {
-        usuario.ativo = false;
-        usuario.motivoBloqueio = "Plano vencido por falta de pagamento.";
-        usuario.desativadoEm = new Date().toISOString();
-        usuario.desativadoPor = "sistema";
-      }
-    });
-  }
-
-  function normalizarUsuario(usuario) {
-    const plano = obterPlanoPadrao(Number(usuario.planoDias) || 30);
-
-    return {
-      ...usuario,
-      login: normalizarLogin(usuario.login),
-      papel: usuario.papel || "vendedor",
-      ativo: Boolean(usuario.ativo),
-      vitalicio: Boolean(usuario.vitalicio),
-      planoDias: Number(usuario.planoDias) || plano.dias,
-      planoValor: Number(usuario.planoValor) || plano.valor,
-      assinaturaInicioEm: usuario.assinaturaInicioEm || null,
-      assinaturaFimEm: usuario.assinaturaFimEm || null,
-      criadoEm: usuario.criadoEm || new Date().toISOString(),
-      criadoPor: usuario.criadoPor || "sistema",
-      motivoBloqueio: usuario.motivoBloqueio || ""
-    };
-  }
-
-  function carregarUsuarios() {
-    const bruto = localStorage.getItem(DB_KEY);
-    if (!bruto) {
-      return [];
-    }
-
-    try {
-      const dados = JSON.parse(bruto);
-      const usuarios = Array.isArray(dados) ? dados.map(normalizarUsuario) : [];
-      sincronizarVencimentos(usuarios);
-      salvarUsuarios(usuarios);
-      return usuarios;
-    } catch (erro) {
-      return [];
-    }
-  }
-
-  function salvarUsuarios(usuarios) {
-    localStorage.setItem(DB_KEY, JSON.stringify(usuarios));
-  }
-
-  function garantirAdminPadrao() {
-    const usuarios = carregarUsuarios();
-    const adminLogin = normalizarLogin(ADMIN_LOGIN);
-
-    // Migra o admin antigo padrao para vendedor para evitar dois admins padrao ativos.
-    usuarios.forEach((u) => {
-      if (normalizarLogin(u.login) === "daviidsiilva" && u.papel === "admin") {
-        u.papel = "vendedor";
-      }
-    });
-
-    const adminExistente = usuarios.find((u) => normalizarLogin(u.login) === adminLogin);
-    if (!adminExistente) {
-      usuarios.push({
-        login: adminLogin,
-        senha: ADMIN_SENHA,
-        papel: "admin",
-        ativo: true,
-        vitalicio: true,
-        planoDias: null,
-        planoValor: null,
-        assinaturaInicioEm: new Date().toISOString(),
-        assinaturaFimEm: null,
-        criadoEm: new Date().toISOString(),
-        criadoPor: "sistema"
+  function montarUrl(path, query) {
+    const url = new URL(`${API_BASE}${path}`);
+    if (query && typeof query === "object") {
+      Object.keys(query).forEach((chave) => {
+        const valor = query[chave];
+        if (valor !== undefined && valor !== null && String(valor) !== "") {
+          url.searchParams.set(chave, String(valor));
+        }
       });
-    } else {
-      adminExistente.senha = adminExistente.senha || ADMIN_SENHA;
-      adminExistente.papel = "admin";
-      adminExistente.ativo = true;
-      adminExistente.vitalicio = true;
-      adminExistente.planoDias = null;
-      adminExistente.planoValor = null;
-      if (!adminExistente.assinaturaInicioEm) {
-        adminExistente.assinaturaInicioEm = new Date().toISOString();
-      }
-      adminExistente.assinaturaFimEm = null;
     }
-
-    salvarUsuarios(usuarios);
+    return url.toString();
   }
 
-  function obterUsuario(login) {
-    garantirAdminPadrao();
-    const loginNormalizado = normalizarLogin(login);
-    return carregarUsuarios().find((u) => normalizarLogin(u.login) === loginNormalizado) || null;
-  }
-
-  function obterStatusUsuario(login) {
-    const usuario = obterUsuario(login);
-    if (!usuario) {
-      return null;
+  function apiRequestSync(method, path, body, query) {
+    const xhr = new XMLHttpRequest();
+    try {
+      xhr.open(method, montarUrl(path, query), false);
+      xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      xhr.send(body ? JSON.stringify(body) : null);
+    } catch (erro) {
+      return { ok: false, status: 0, error: { message: "Servidor indisponivel." } };
     }
 
-    const diasRestantes = usuario.ativo ? calcularDiasRestantes(usuario.assinaturaFimEm) : 0;
-    const vencido = usuario.ativo && diasRestantes === 0 && usuario.assinaturaFimEm && new Date(usuario.assinaturaFimEm).getTime() < Date.now();
+    let data = null;
+    try {
+      data = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+    } catch (erro) {
+      data = null;
+    }
 
     return {
-      login: usuario.login,
-      ativo: usuario.ativo,
-      vitalicio: Boolean(usuario.vitalicio),
-      vencido,
-      status: !usuario.ativo ? "desativado" : usuario.vitalicio ? "vitalicio" : vencido ? "vencido" : "ativo",
-      planoDias: usuario.planoDias,
-      planoValor: usuario.planoValor,
-      assinaturaInicioEm: usuario.assinaturaInicioEm,
-      assinaturaFimEm: usuario.assinaturaFimEm,
-      diasRestantes: usuario.vitalicio ? null : diasRestantes,
-      mensagem: !usuario.ativo
-        ? (usuario.motivoBloqueio || "Usuario desativado por falta de pagamento.")
-        : usuario.vitalicio
-          ? "Usuario vitalicio. Acesso liberado sem vencimento."
-        : vencido
-          ? "Plano vencido. Regularize o pagamento para voltar a acessar."
-          : `Plano ativo. Faltam ${diasRestantes} dia(s) para vencer.`
+      ok: xhr.status >= 200 && xhr.status < 300,
+      status: xhr.status,
+      data,
+      error: data || { message: "Falha na comunicacao com o servidor." }
     };
   }
 
-  function ativarUsuario(login, diasPlano, ativadoPor) {
-    garantirAdminPadrao();
-    const loginNormalizado = normalizarLogin(login);
-    const usuarios = carregarUsuarios();
-    const usuario = usuarios.find((u) => normalizarLogin(u.login) === loginNormalizado);
-
-    if (!usuario) {
-      return { ok: false, mensagem: "Usuario nao encontrado." };
-    }
-
-    if (normalizarLogin(usuario.login) === normalizarLogin(ADMIN_LOGIN)) {
-      return { ok: false, mensagem: "O usuario administrador e vitalicio e nao pode receber plano." };
-    }
-
-    const plano = obterPlanoPadrao(Number(diasPlano) || 30);
-    const agora = new Date().toISOString();
-
-    usuario.ativo = true;
-    usuario.planoDias = plano.dias;
-    usuario.planoValor = plano.valor;
-    usuario.assinaturaInicioEm = agora;
-    usuario.assinaturaFimEm = adicionarDias(agora, plano.dias);
-    usuario.motivoBloqueio = "";
-    usuario.desativadoEm = null;
-    usuario.desativadoPor = null;
-    usuario.ativadoEm = agora;
-    usuario.ativadoPor = ativadoPor || "admin";
-
-    salvarUsuarios(usuarios);
-    return { ok: true, mensagem: `Usuario ativado no plano de ${plano.dias} dias.` };
+  function mensagemResposta(resposta, fallback) {
+    return resposta?.data?.mensagem || resposta?.error?.mensagem || resposta?.error?.message || fallback;
   }
 
-  function desativarUsuario(login, motivo, desativadoPor) {
-    garantirAdminPadrao();
-    const loginNormalizado = normalizarLogin(login);
-    const usuarios = carregarUsuarios();
-    const usuario = usuarios.find((u) => normalizarLogin(u.login) === loginNormalizado);
-
-    if (!usuario) {
-      return { ok: false, mensagem: "Usuario nao encontrado." };
-    }
-
-    if (normalizarLogin(usuario.login) === normalizarLogin(ADMIN_LOGIN)) {
-      return { ok: false, mensagem: "O usuario administrador e vitalicio e nao pode ser desativado." };
-    }
-
-    usuario.ativo = false;
-    usuario.motivoBloqueio = motivo || "Usuario desativado por falta de pagamento.";
-    usuario.desativadoEm = new Date().toISOString();
-    usuario.desativadoPor = desativadoPor || "admin";
-
-    salvarUsuarios(usuarios);
-    return { ok: true, mensagem: "Usuario desativado com sucesso." };
-  }
-
-  function autenticar(login, senha) {
-    garantirAdminPadrao();
-
-    const loginNormalizado = normalizarLogin(login);
-
-    if (!loginValido(loginNormalizado)) {
-      return { ok: false, mensagem: "Login invalido. Use de 3 a 30 caracteres: letras, numeros, ponto, traço ou underscore." };
-    }
-
-    const tentativas = obterStatusTentativa(loginNormalizado);
-    if (Number(tentativas.bloqueadoAte || 0) > Date.now()) {
-      const minutosRestantes = Math.ceil((Number(tentativas.bloqueadoAte) - Date.now()) / 60000);
-      return { ok: false, mensagem: `Muitas tentativas invalidas. Tente novamente em ${Math.max(1, minutosRestantes)} minuto(s).` };
-    }
-
-    const usuarios = carregarUsuarios();
-
-    const usuario = usuarios.find((u) => normalizarLogin(u.login) === loginNormalizado && u.senha === senha);
-    if (!usuario) {
-      registrarFalhaLogin(loginNormalizado);
-      return { ok: false, mensagem: "Login ou senha invalidos." };
-    }
-
-    limparFalhasLogin(loginNormalizado);
-
-    const status = obterStatusUsuario(usuario.login);
-    if (status && !status.ativo) {
-      return { ok: false, mensagem: status.mensagem };
-    }
-
-    const sessao = {
-      login: usuario.login,
-      papel: usuario.papel,
-      vitalicio: Boolean(usuario.vitalicio),
-      planoDias: usuario.vitalicio ? null : (usuario.planoDias || 30),
-      planoValor: usuario.vitalicio ? null : (usuario.planoValor || 20),
-      assinaturaInicioEm: usuario.assinaturaInicioEm || null,
-      assinaturaFimEm: usuario.assinaturaFimEm || null,
-      diasRestantes: status ? status.diasRestantes : 0,
-      dataLogin: new Date().toISOString(),
-      expiraEm: new Date(Date.now() + (SESSAO_TTL_HORAS * 60 * 60 * 1000)).toISOString()
-    };
-
+  function salvarSessao(sessao) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(sessao));
-    return { ok: true, usuario: sessao };
   }
 
-  function obterSessao() {
+  function lerSessaoLocal() {
     const bruto = localStorage.getItem(SESSION_KEY);
     if (!bruto) {
       return null;
@@ -361,24 +68,91 @@
       if (!sessao || typeof sessao !== "object") {
         return null;
       }
-
-      if (!sessao.expiraEm || new Date(sessao.expiraEm).getTime() < Date.now()) {
-        localStorage.removeItem(SESSION_KEY);
-        return null;
-      }
-
       return sessao;
     } catch (erro) {
       return null;
     }
   }
 
+  function obterTokenSessao() {
+    const sessao = lerSessaoLocal();
+    return sessao?.token || "";
+  }
+
+  function importarUsuariosLegadosUmaVez() {
+    if (localStorage.getItem(MIGRATION_DONE_KEY) === "1") {
+      return;
+    }
+
+    const bruto = localStorage.getItem(DB_KEY);
+    if (!bruto) {
+      localStorage.setItem(MIGRATION_DONE_KEY, "1");
+      return;
+    }
+
+    try {
+      const usuarios = JSON.parse(bruto);
+      if (!Array.isArray(usuarios) || usuarios.length === 0) {
+        localStorage.setItem(MIGRATION_DONE_KEY, "1");
+        return;
+      }
+
+      apiRequestSync("POST", "/import", { usuarios });
+      localStorage.setItem(MIGRATION_DONE_KEY, "1");
+    } catch (erro) {
+      // Mantem sem migrar para tentar novamente em uma proxima inicializacao.
+    }
+  }
+
+  function garantirAdminPadrao() {
+    const resposta = apiRequestSync("GET", "/bootstrap");
+    if (resposta.ok) {
+      importarUsuariosLegadosUmaVez();
+    }
+    return { ok: resposta.ok, mensagem: mensagemResposta(resposta, "Falha ao inicializar base de usuarios.") };
+  }
+
+  function autenticar(login, senha) {
+    garantirAdminPadrao();
+
+    const resposta = apiRequestSync("POST", "/login", {
+      login: normalizarLogin(login),
+      senha: String(senha || "")
+    });
+
+    if (!resposta.ok || !resposta.data?.ok || !resposta.data?.usuario) {
+      return { ok: false, mensagem: mensagemResposta(resposta, "Login ou senha invalidos.") };
+    }
+
+    salvarSessao(resposta.data.usuario);
+    return { ok: true, usuario: resposta.data.usuario };
+  }
+
+  function obterSessao() {
+    const token = obterTokenSessao();
+    if (!token) {
+      return null;
+    }
+
+    const resposta = apiRequestSync("GET", "/session", null, { token });
+    if (!resposta.ok || !resposta.data?.ok || !resposta.data?.usuario) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+
+    salvarSessao(resposta.data.usuario);
+    return resposta.data.usuario;
+  }
+
   function sair() {
+    const token = obterTokenSessao();
+    if (token) {
+      apiRequestSync("POST", "/logout", { token });
+    }
     localStorage.removeItem(SESSION_KEY);
   }
 
   function exigirLogin() {
-    garantirAdminPadrao();
     const sessao = obterSessao();
     if (!sessao) {
       window.location.href = "index.html";
@@ -392,60 +166,91 @@
       return null;
     }
 
-    if (status) {
-      sessao.diasRestantes = status.diasRestantes;
-      sessao.planoDias = status.planoDias;
-      sessao.planoValor = status.planoValor;
-      sessao.assinaturaFimEm = status.assinaturaFimEm;
-      sessao.vitalicio = status.vitalicio;
-    }
-
     return sessao;
   }
 
+  function obterUsuario(login) {
+    const resposta = apiRequestSync("GET", "/users/by-login", null, { login: normalizarLogin(login) });
+    if (!resposta.ok || !resposta.data?.ok) {
+      return null;
+    }
+    return resposta.data.usuario || null;
+  }
+
+  function obterStatusUsuario(login) {
+    const resposta = apiRequestSync("GET", "/users/status", null, { login: normalizarLogin(login) });
+    if (!resposta.ok || !resposta.data?.ok) {
+      return null;
+    }
+    return resposta.data.status || null;
+  }
+
   function criarUsuarioVendedor(login, senha, criadoPor) {
-    garantirAdminPadrao();
-
-    const loginNormalizado = normalizarLogin(login);
-    if (!loginNormalizado) {
-      return { ok: false, mensagem: "Informe um login." };
-    }
-
-    if (!loginValido(loginNormalizado)) {
-      return { ok: false, mensagem: "Login invalido. Use de 3 a 30 caracteres: letras, numeros, ponto, traço ou underscore." };
-    }
-
-    if (!senha || senha.trim().length < 4) {
-      return { ok: false, mensagem: "A senha precisa ter pelo menos 4 caracteres." };
-    }
-
-    const usuarios = carregarUsuarios();
-    const jaExiste = usuarios.some((u) => normalizarLogin(u.login) === loginNormalizado);
-    if (jaExiste) {
-      return { ok: false, mensagem: "Esse login ja existe." };
-    }
-
-    usuarios.push({
-      login: loginNormalizado,
-      senha: senha.trim(),
-      papel: "vendedor",
-      ativo: false,
-      vitalicio: false,
-      planoDias: 30,
-      planoValor: 20,
-      assinaturaInicioEm: null,
-      assinaturaFimEm: null,
-      criadoEm: new Date().toISOString(),
-      criadoPor: criadoPor || "admin"
+    const token = obterTokenSessao();
+    const resposta = apiRequestSync("POST", "/users/create", {
+      token,
+      login: normalizarLogin(login),
+      senha: String(senha || ""),
+      criadoPor: criadoPor || null
     });
 
-    salvarUsuarios(usuarios);
-    return { ok: true, mensagem: "Vendedor cadastrado com sucesso." };
+    return {
+      ok: Boolean(resposta.data?.ok),
+      mensagem: mensagemResposta(resposta, "Falha ao cadastrar vendedor.")
+    };
+  }
+
+  function ativarUsuario(login, diasPlano, ativadoPor) {
+    const token = obterTokenSessao();
+    const resposta = apiRequestSync("POST", "/users/activate", {
+      token,
+      login: normalizarLogin(login),
+      diasPlano: Number(diasPlano) || 30,
+      ativadoPor: ativadoPor || null
+    });
+
+    return {
+      ok: Boolean(resposta.data?.ok),
+      mensagem: mensagemResposta(resposta, "Falha ao ativar usuario.")
+    };
+  }
+
+  function desativarUsuario(login, motivo, desativadoPor) {
+    const token = obterTokenSessao();
+    const resposta = apiRequestSync("POST", "/users/deactivate", {
+      token,
+      login: normalizarLogin(login),
+      motivo: motivo || "Usuario desativado por falta de pagamento.",
+      desativadoPor: desativadoPor || null
+    });
+
+    return {
+      ok: Boolean(resposta.data?.ok),
+      mensagem: mensagemResposta(resposta, "Falha ao desativar usuario.")
+    };
+  }
+
+  function excluirUsuario(login, excluidoPor) {
+    const token = obterTokenSessao();
+    const resposta = apiRequestSync("POST", "/users/delete", {
+      token,
+      login: normalizarLogin(login),
+      excluidoPor: excluidoPor || null
+    });
+
+    return {
+      ok: Boolean(resposta.data?.ok),
+      mensagem: mensagemResposta(resposta, "Falha ao excluir usuario.")
+    };
   }
 
   function listarVendedores() {
-    garantirAdminPadrao();
-    return carregarUsuarios().filter((u) => u.papel === "vendedor");
+    const token = obterTokenSessao();
+    const resposta = apiRequestSync("GET", "/users", null, { token });
+    if (!resposta.ok || !resposta.data?.ok) {
+      return [];
+    }
+    return Array.isArray(resposta.data.usuarios) ? resposta.data.usuarios : [];
   }
 
   window.AuthDB = {
@@ -456,6 +261,7 @@
     obterStatusUsuario,
     ativarUsuario,
     desativarUsuario,
+    excluirUsuario,
     sair,
     exigirLogin,
     criarUsuarioVendedor,

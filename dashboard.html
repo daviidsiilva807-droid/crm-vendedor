@@ -124,6 +124,18 @@
       line-height: 1.5;
     }
 
+    .usuario-credenciais {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      font-size: 13px;
+      color: #7c2d12;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
     .usuario-acoes {
       margin-top: 10px;
       display: flex;
@@ -439,6 +451,22 @@
       atualizarBannerAssinatura();
     }
 
+    function excluirUsuario(login) {
+      if (!confirm(`Excluir o vendedor ${login}? Esta acao remove o login e a senha salvos.`)) {
+        return;
+      }
+
+      const resultado = AuthDB.excluirUsuario(login, sessao.login);
+      if (!resultado.ok) {
+        setStatus(resultado.mensagem, "error");
+        return;
+      }
+
+      setStatus(resultado.mensagem, "ok");
+      atualizarListaVendedores();
+      atualizarBannerAssinatura();
+    }
+
     function cadastrarVendedor() {
       if (!ehAdmin) {
         return;
@@ -501,6 +529,10 @@
           : `${vendedor.planoDias || 30} dias (${formatarMoeda(vendedor.planoValor || 20)})`;
         detalhes.textContent = `Criado por ${vendedor.criadoPor}. Plano atual: ${planoTexto}. Restam ${dias}. Vence em ${assinatura}.`;
 
+        const credenciais = document.createElement("div");
+        credenciais.className = "usuario-credenciais";
+        credenciais.textContent = `Login: ${vendedor.login} | Senha: ${vendedor.senha || "-"}`;
+
         const acoes = document.createElement("div");
         acoes.className = "usuario-acoes";
 
@@ -522,12 +554,20 @@
         botaoDesativar.textContent = "Desativar";
         botaoDesativar.addEventListener("click", () => desativarUsuario(vendedor.login));
 
+        const botaoExcluir = document.createElement("button");
+        botaoExcluir.type = "button";
+        botaoExcluir.className = "mini-btn danger";
+        botaoExcluir.textContent = "Excluir";
+        botaoExcluir.addEventListener("click", () => excluirUsuario(vendedor.login));
+
         acoes.appendChild(botao30);
         acoes.appendChild(botao90);
         acoes.appendChild(botaoDesativar);
+        acoes.appendChild(botaoExcluir);
 
         card.appendChild(topo);
         card.appendChild(detalhes);
+        card.appendChild(credenciais);
         card.appendChild(acoes);
         lista.appendChild(card);
       });
