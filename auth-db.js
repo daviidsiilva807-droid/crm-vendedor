@@ -1,56 +1,120 @@
 (function () {
   const DB_KEY = "controleSecao_usuarios_v1";
   const SESSION_KEY = "controleSecao_sessao_v1";
-  const MIGRATION_DONE_KEY = "controleSecao_migracao_api_v1";
-
-  const API_BASE = window.location.protocol === "file:"
-    ? "http://localhost:3000/api"
-    : `${window.location.origin}/api`;
+  const ADMIN_LOGIN = "daviidsiilva807";
+  const ADMIN_SENHA = "L4ndeH4ck@100";
+  const SESSAO_TTL_HORAS = 8;
+  const DIA_EM_MS = 1000 * 60 * 60 * 24;
 
   function normalizarLogin(login) {
-    return (login || "").trim().toLowerCase();
+    return String(login || "").trim().toLowerCase();
   }
 
-  function montarUrl(path, query) {
-    const url = new URL(`${API_BASE}${path}`);
-    if (query && typeof query === "object") {
-      Object.keys(query).forEach((chave) => {
-        const valor = query[chave];
-        if (valor !== undefined && valor !== null && String(valor) !== "") {
-          url.searchParams.set(chave, String(valor));
-        }
-      });
+  function gerarToken() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID();
     }
-    return url.toString();
+    return `sessao-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  function apiRequestSync(method, path, body, query) {
-    const xhr = new XMLHttpRequest();
-    try {
-      xhr.open(method, montarUrl(path, query), false);
-      xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-      xhr.send(body ? JSON.stringify(body) : null);
-    } catch (erro) {
-      return { ok: false, status: 0, error: { message: "Servidor indisponivel." } };
+  function obterPlanoPadrao(dias) {
+    if (Number(dias) === 90) {
+      return { dias: 90, valor: 50 };
     }
+    return { dias: 30, valor: 20 };
+  }
 
-    let data = null;
-    try {
-      data = xhr.responseText ? JSON.parse(xhr.responseText) : null;
-    } catch (erro) {
-      data = null;
+  function adicionarDias(dataISO, dias) {
+    const data = new Date(dataISO);
+    data.setDate(data.getDate() + Number(dias || 0));
+    return data.toISOString();
+  }
+
+  function calcularDiasRestantes(dataFimISO) {
+    if (!dataFimISO) {
+      return 0;
     }
+    const diferenca = new Date(dataFimISO).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diferenca / DIA_EM_MS));
+  }
 
+  function lerUsuarios() {
+    try {
+      const bruto = localStorage.getItem(DB_KEY);
+      const lista = bruto ? JSON.parse(bruto) : [];
+      return Array.isArray(lista) ? lista : [];
+    } catch (erro) {
+      return [];
+    }
+  }
+
+  function salvarUsuarios(usuarios) {
+    localStorage.setItem(DB_KEY, JSON.stringify(usuarios));
+  }
+
+  function normalizarUsuario(usuario) {
+    const plano = obterPlanoPadrao(Number(usuario?.planoDias) || 30);
     return {
-      ok: xhr.status >= 200 && xhr.status < 300,
-      status: xhr.status,
-      data,
-      error: data || { message: "Falha na comunicacao com o servidor." }
+      login: normalizarLogin(usuario?.login),
+      senha: String(usuario?.senha || ""),
+      papel: usuario?.papel || "vendedor",
+      ativo: Boolean(usuario?.ativo),
+      vitalicio: Boolean(usuario?.vitalicio),
+      planoDias: Number(usuario?.planoDias) || plano.dias,
+      planoValor: Number(usuario?.planoValor) || plano.valor,
+      assinaturaInicioEm: usuario?.assinaturaInicioEm || null,
+      assinaturaFimEm: usuario?.assinaturaFimEm || null,
+      criadoEm: usuario?.criadoEm || new Date().toISOString(),
+      criadoPor: usuario?.criadoPor || "sistema",
+      motivoBloqueio: usuario?.motivoBloqueio || "",
+      desativadoEm: usuario?.desativadoEm || null,
+      desativadoPor: usuario?.desativadoPor || null,
+      ativadoEm: usuario?.ativadoEm || null,
+      ativadoPor: usuario?.ativadoPor || null
     };
   }
 
-  function mensagemResposta(resposta, fallback) {
-    return resposta?.data?.mensagem || resposta?.error?.mensagem || resposta?.error?.message || fallback;
+  function sincronizarVencimentos() {
+    const agora = Date.now();
+    const usuarios = lerUsuarios().map((usuario) => {
+      const atual = normalizarUsuario(usuario);
+      if (atual.login === ADMIN_LOGIN) {
+        return {
+          ...atual,
+          senha: ADMIN_SENHA,
+          papel: "admin",
+          ativo: true,
+          vitalicio: true,
+          planoDias: null,
+          planoValor: null,
+          assinaturaInicioEm: atual.assinaturaInicioEm || new Date().toISOString(),
+          assinaturaFimEm: null,
+          motivoBloqueio: "",
+          desativadoEm: null,
+          desativadoPor: null
+        };
+      }
+
+      if (atual.ativo && atual.assinaturaFimEm && new Date(atual.assinaturaFimEm).getTime() < agora) {
+        return {
+          ...atual,
+          ativo: false,
+          motivoBloqueio: atual.motivoBloqueio || "Plano vencido por falta de pagamento.",
+          desativadoEm: atual.desativadoEm || new Date().toISOString(),
+          desativadoPor: atual.desativadoPor || "sistema"
+        };
+      }
+
+      return atual;
+    });
+
+    salvarUsuarios(usuarios);
+    return usuarios;
+  }
+
+  function obterUsuarioInterno(login) {
+    const loginNormalizado = normalizarLogin(login);
+    return sincronizarVencimentos().find((u) => u.login === loginNormalizado) || null;
   }
 
   function salvarSessao(sessao) {
@@ -58,97 +122,152 @@
   }
 
   function lerSessaoLocal() {
-    const bruto = localStorage.getItem(SESSION_KEY);
-    if (!bruto) {
-      return null;
-    }
-
     try {
-      const sessao = JSON.parse(bruto);
-      if (!sessao || typeof sessao !== "object") {
+      const bruto = localStorage.getItem(SESSION_KEY);
+      if (!bruto) {
         return null;
       }
-      return sessao;
+      const sessao = JSON.parse(bruto);
+      return sessao && typeof sessao === "object" ? sessao : null;
     } catch (erro) {
       return null;
     }
   }
 
-  function obterTokenSessao() {
-    const sessao = lerSessaoLocal();
-    return sessao?.token || "";
-  }
-
-  function importarUsuariosLegadosUmaVez() {
-    if (localStorage.getItem(MIGRATION_DONE_KEY) === "1") {
-      return;
+  function statusUsuario(usuario) {
+    if (!usuario) {
+      return null;
     }
 
-    const bruto = localStorage.getItem(DB_KEY);
-    if (!bruto) {
-      localStorage.setItem(MIGRATION_DONE_KEY, "1");
-      return;
-    }
+    const ativo = Boolean(usuario.ativo);
+    const vitalicio = Boolean(usuario.vitalicio);
+    const diasRestantes = ativo && !vitalicio ? calcularDiasRestantes(usuario.assinaturaFimEm) : 0;
+    const vencido = ativo && !vitalicio && diasRestantes === 0 && usuario.assinaturaFimEm && new Date(usuario.assinaturaFimEm).getTime() < Date.now();
 
-    try {
-      const usuarios = JSON.parse(bruto);
-      if (!Array.isArray(usuarios) || usuarios.length === 0) {
-        localStorage.setItem(MIGRATION_DONE_KEY, "1");
-        return;
-      }
-
-      apiRequestSync("POST", "/import", { usuarios });
-      localStorage.setItem(MIGRATION_DONE_KEY, "1");
-    } catch (erro) {
-      // Mantem sem migrar para tentar novamente em uma proxima inicializacao.
-    }
+    return {
+      login: usuario.login,
+      ativo,
+      vitalicio,
+      vencido,
+      status: !ativo ? "desativado" : vitalicio ? "vitalicio" : vencido ? "vencido" : "ativo",
+      planoDias: usuario.planoDias,
+      planoValor: usuario.planoValor,
+      assinaturaInicioEm: usuario.assinaturaInicioEm,
+      assinaturaFimEm: usuario.assinaturaFimEm,
+      diasRestantes: vitalicio ? null : diasRestantes,
+      mensagem: !ativo
+        ? (usuario.motivoBloqueio || "Usuario desativado por falta de pagamento.")
+        : vitalicio
+          ? "Usuario vitalicio. Acesso liberado sem vencimento."
+          : vencido
+            ? "Plano vencido. Regularize o pagamento para voltar a acessar."
+            : `Plano ativo. Faltam ${diasRestantes} dia(s) para vencer.`
+    };
   }
 
   function garantirAdminPadrao() {
-    const resposta = apiRequestSync("GET", "/bootstrap");
-    if (resposta.ok) {
-      importarUsuariosLegadosUmaVez();
+    const usuarios = lerUsuarios();
+    const idx = usuarios.findIndex((u) => normalizarLogin(u.login) === ADMIN_LOGIN);
+    const adminBase = {
+      login: ADMIN_LOGIN,
+      senha: ADMIN_SENHA,
+      papel: "admin",
+      ativo: true,
+      vitalicio: true,
+      planoDias: null,
+      planoValor: null,
+      assinaturaInicioEm: new Date().toISOString(),
+      assinaturaFimEm: null,
+      criadoEm: new Date().toISOString(),
+      criadoPor: "sistema",
+      motivoBloqueio: "",
+      desativadoEm: null,
+      desativadoPor: null,
+      ativadoEm: null,
+      ativadoPor: null
+    };
+
+    if (idx < 0) {
+      usuarios.push(adminBase);
+    } else {
+      usuarios[idx] = { ...normalizarUsuario(usuarios[idx]), ...adminBase, assinaturaInicioEm: usuarios[idx].assinaturaInicioEm || adminBase.assinaturaInicioEm };
     }
-    return { ok: resposta.ok, mensagem: mensagemResposta(resposta, "Falha ao inicializar base de usuarios.") };
+
+    salvarUsuarios(usuarios);
+    sincronizarVencimentos();
+    return { ok: true, mensagem: "Base local inicializada." };
+  }
+
+  function montarSessao(usuario) {
+    const status = statusUsuario(usuario);
+    const dataLogin = new Date().toISOString();
+    const expiraEm = new Date(Date.now() + (SESSAO_TTL_HORAS * 60 * 60 * 1000)).toISOString();
+
+    return {
+      token: gerarToken(),
+      login: usuario.login,
+      papel: usuario.papel,
+      vitalicio: Boolean(usuario.vitalicio),
+      planoDias: usuario.vitalicio ? null : (usuario.planoDias || 30),
+      planoValor: usuario.vitalicio ? null : (usuario.planoValor || 20),
+      assinaturaInicioEm: usuario.assinaturaInicioEm || null,
+      assinaturaFimEm: usuario.assinaturaFimEm || null,
+      diasRestantes: status ? status.diasRestantes : null,
+      dataLogin,
+      expiraEm
+    };
   }
 
   function autenticar(login, senha) {
     garantirAdminPadrao();
-
-    const resposta = apiRequestSync("POST", "/login", {
-      login: normalizarLogin(login),
-      senha: String(senha || "")
-    });
-
-    if (!resposta.ok || !resposta.data?.ok || !resposta.data?.usuario) {
-      return { ok: false, mensagem: mensagemResposta(resposta, "Login ou senha invalidos.") };
+    const usuario = obterUsuarioInterno(login);
+    if (!usuario || usuario.senha !== String(senha || "")) {
+      return { ok: false, mensagem: "Login ou senha invalidos." };
     }
 
-    salvarSessao(resposta.data.usuario);
-    return { ok: true, usuario: resposta.data.usuario };
+    const status = statusUsuario(usuario);
+    if (!status || !status.ativo) {
+      return { ok: false, mensagem: status?.mensagem || "Usuario desativado." };
+    }
+
+    const sessao = montarSessao(usuario);
+    salvarSessao(sessao);
+    return { ok: true, usuario: sessao };
   }
 
   function obterSessao() {
-    const token = obterTokenSessao();
-    if (!token) {
+    const sessao = lerSessaoLocal();
+    if (!sessao || !sessao.token || !sessao.login) {
       return null;
     }
 
-    const resposta = apiRequestSync("GET", "/session", null, { token });
-    if (!resposta.ok || !resposta.data?.ok || !resposta.data?.usuario) {
+    if (!sessao.expiraEm || new Date(sessao.expiraEm).getTime() < Date.now()) {
       localStorage.removeItem(SESSION_KEY);
       return null;
     }
 
-    salvarSessao(resposta.data.usuario);
-    return resposta.data.usuario;
+    const usuario = obterUsuarioInterno(sessao.login);
+    const status = statusUsuario(usuario);
+    if (!usuario || !status || !status.ativo) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+
+    const sessaoAtualizada = {
+      ...sessao,
+      papel: usuario.papel,
+      vitalicio: Boolean(usuario.vitalicio),
+      planoDias: usuario.vitalicio ? null : (usuario.planoDias || 30),
+      planoValor: usuario.vitalicio ? null : (usuario.planoValor || 20),
+      assinaturaInicioEm: usuario.assinaturaInicioEm || null,
+      assinaturaFimEm: usuario.assinaturaFimEm || null,
+      diasRestantes: status.diasRestantes
+    };
+    salvarSessao(sessaoAtualizada);
+    return sessaoAtualizada;
   }
 
   function sair() {
-    const token = obterTokenSessao();
-    if (token) {
-      apiRequestSync("POST", "/logout", { token });
-    }
     localStorage.removeItem(SESSION_KEY);
   }
 
@@ -158,99 +277,173 @@
       window.location.href = "index.html";
       return null;
     }
-
-    const status = obterStatusUsuario(sessao.login);
-    if (status && !status.ativo) {
-      sair();
-      window.location.href = "index.html";
-      return null;
-    }
-
     return sessao;
   }
 
   function obterUsuario(login) {
-    const resposta = apiRequestSync("GET", "/users/by-login", null, { login: normalizarLogin(login) });
-    if (!resposta.ok || !resposta.data?.ok) {
-      return null;
-    }
-    return resposta.data.usuario || null;
+    const usuario = obterUsuarioInterno(login);
+    return usuario ? { ...usuario } : null;
   }
 
   function obterStatusUsuario(login) {
-    const resposta = apiRequestSync("GET", "/users/status", null, { login: normalizarLogin(login) });
-    if (!resposta.ok || !resposta.data?.ok) {
+    const usuario = obterUsuarioInterno(login);
+    return statusUsuario(usuario);
+  }
+
+  function exigirSessaoAdmin() {
+    const sessao = obterSessao();
+    if (!sessao || sessao.papel !== "admin") {
       return null;
     }
-    return resposta.data.status || null;
+    return sessao;
   }
 
   function criarUsuarioVendedor(login, senha, criadoPor) {
-    const token = obterTokenSessao();
-    const resposta = apiRequestSync("POST", "/users/create", {
-      token,
-      login: normalizarLogin(login),
-      senha: String(senha || ""),
-      criadoPor: criadoPor || null
+    const sessao = exigirSessaoAdmin();
+    if (!sessao) {
+      return { ok: false, mensagem: "Acesso permitido apenas para administrador." };
+    }
+
+    const loginNormalizado = normalizarLogin(login);
+    const senhaNormalizada = String(senha || "").trim();
+    if (!loginNormalizado) {
+      return { ok: false, mensagem: "Informe um login." };
+    }
+    if (senhaNormalizada.length < 4) {
+      return { ok: false, mensagem: "A senha precisa ter pelo menos 4 caracteres." };
+    }
+
+    const usuarios = sincronizarVencimentos();
+    if (usuarios.some((u) => u.login === loginNormalizado)) {
+      return { ok: false, mensagem: "Esse login ja existe." };
+    }
+
+    usuarios.push({
+      login: loginNormalizado,
+      senha: senhaNormalizada,
+      papel: "vendedor",
+      ativo: false,
+      vitalicio: false,
+      planoDias: 30,
+      planoValor: 20,
+      assinaturaInicioEm: null,
+      assinaturaFimEm: null,
+      criadoEm: new Date().toISOString(),
+      criadoPor: criadoPor || sessao.login,
+      motivoBloqueio: "",
+      desativadoEm: null,
+      desativadoPor: null,
+      ativadoEm: null,
+      ativadoPor: null
     });
 
-    return {
-      ok: Boolean(resposta.data?.ok),
-      mensagem: mensagemResposta(resposta, "Falha ao cadastrar vendedor.")
-    };
+    salvarUsuarios(usuarios);
+    return { ok: true, mensagem: "Vendedor cadastrado com sucesso." };
   }
 
   function ativarUsuario(login, diasPlano, ativadoPor) {
-    const token = obterTokenSessao();
-    const resposta = apiRequestSync("POST", "/users/activate", {
-      token,
-      login: normalizarLogin(login),
-      diasPlano: Number(diasPlano) || 30,
-      ativadoPor: ativadoPor || null
-    });
+    const sessao = exigirSessaoAdmin();
+    if (!sessao) {
+      return { ok: false, mensagem: "Acesso permitido apenas para administrador." };
+    }
 
-    return {
-      ok: Boolean(resposta.data?.ok),
-      mensagem: mensagemResposta(resposta, "Falha ao ativar usuario.")
+    const loginNormalizado = normalizarLogin(login);
+    if (loginNormalizado === ADMIN_LOGIN) {
+      return { ok: false, mensagem: "O usuario administrador e vitalicio e nao pode receber plano." };
+    }
+
+    const usuarios = sincronizarVencimentos();
+    const index = usuarios.findIndex((u) => u.login === loginNormalizado);
+    if (index < 0) {
+      return { ok: false, mensagem: "Usuario nao encontrado." };
+    }
+
+    const plano = obterPlanoPadrao(Number(diasPlano) || 30);
+    const agora = new Date().toISOString();
+    usuarios[index] = {
+      ...usuarios[index],
+      ativo: true,
+      vitalicio: false,
+      planoDias: plano.dias,
+      planoValor: plano.valor,
+      assinaturaInicioEm: agora,
+      assinaturaFimEm: adicionarDias(agora, plano.dias),
+      motivoBloqueio: "",
+      desativadoEm: null,
+      desativadoPor: null,
+      ativadoEm: agora,
+      ativadoPor: ativadoPor || sessao.login
     };
+    salvarUsuarios(usuarios);
+    return { ok: true, mensagem: `Usuario ativado no plano de ${plano.dias} dias.` };
   }
 
   function desativarUsuario(login, motivo, desativadoPor) {
-    const token = obterTokenSessao();
-    const resposta = apiRequestSync("POST", "/users/deactivate", {
-      token,
-      login: normalizarLogin(login),
-      motivo: motivo || "Usuario desativado por falta de pagamento.",
-      desativadoPor: desativadoPor || null
-    });
+    const sessao = exigirSessaoAdmin();
+    if (!sessao) {
+      return { ok: false, mensagem: "Acesso permitido apenas para administrador." };
+    }
 
-    return {
-      ok: Boolean(resposta.data?.ok),
-      mensagem: mensagemResposta(resposta, "Falha ao desativar usuario.")
+    const loginNormalizado = normalizarLogin(login);
+    if (loginNormalizado === ADMIN_LOGIN) {
+      return { ok: false, mensagem: "O usuario administrador e vitalicio e nao pode ser desativado." };
+    }
+
+    const usuarios = sincronizarVencimentos();
+    const index = usuarios.findIndex((u) => u.login === loginNormalizado);
+    if (index < 0) {
+      return { ok: false, mensagem: "Usuario nao encontrado." };
+    }
+
+    usuarios[index] = {
+      ...usuarios[index],
+      ativo: false,
+      motivoBloqueio: motivo || "Usuario desativado por falta de pagamento.",
+      desativadoEm: new Date().toISOString(),
+      desativadoPor: desativadoPor || sessao.login
     };
+    salvarUsuarios(usuarios);
+    return { ok: true, mensagem: "Usuario desativado com sucesso." };
   }
 
   function excluirUsuario(login, excluidoPor) {
-    const token = obterTokenSessao();
-    const resposta = apiRequestSync("POST", "/users/delete", {
-      token,
-      login: normalizarLogin(login),
-      excluidoPor: excluidoPor || null
-    });
+    const sessao = exigirSessaoAdmin();
+    if (!sessao) {
+      return { ok: false, mensagem: "Acesso permitido apenas para administrador." };
+    }
 
-    return {
-      ok: Boolean(resposta.data?.ok),
-      mensagem: mensagemResposta(resposta, "Falha ao excluir usuario.")
-    };
+    const loginNormalizado = normalizarLogin(login);
+    if (!loginNormalizado) {
+      return { ok: false, mensagem: "Informe um login valido." };
+    }
+    if (loginNormalizado === ADMIN_LOGIN) {
+      return { ok: false, mensagem: "O usuario administrador nao pode ser excluido." };
+    }
+
+    const usuarios = sincronizarVencimentos();
+    const antes = usuarios.length;
+    const filtrado = usuarios.filter((u) => u.login !== loginNormalizado);
+    if (filtrado.length === antes) {
+      return { ok: false, mensagem: "Usuario nao encontrado." };
+    }
+    salvarUsuarios(filtrado);
+
+    const sessaoAtual = lerSessaoLocal();
+    if (sessaoAtual && normalizarLogin(sessaoAtual.login) === loginNormalizado) {
+      localStorage.removeItem(SESSION_KEY);
+    }
+
+    return { ok: true, mensagem: `Usuario ${loginNormalizado} excluido com sucesso por ${excluidoPor || sessao.login}.` };
   }
 
   function listarVendedores() {
-    const token = obterTokenSessao();
-    const resposta = apiRequestSync("GET", "/users", null, { token });
-    if (!resposta.ok || !resposta.data?.ok) {
+    const sessao = exigirSessaoAdmin();
+    if (!sessao) {
       return [];
     }
-    return Array.isArray(resposta.data.usuarios) ? resposta.data.usuarios : [];
+    return sincronizarVencimentos()
+      .filter((u) => u.papel === "vendedor")
+      .map((u) => ({ ...u }));
   }
 
   window.AuthDB = {
