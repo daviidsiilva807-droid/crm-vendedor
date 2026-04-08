@@ -20,6 +20,7 @@
     .input-area label { font-weight: bold; }
     input, button, textarea { padding: 10px 12px; font-size: 15px; }
     input[type="text"] { flex: 1 1 220px; min-height: 42px; border: 1px solid #ccc; border-radius: 8px; }
+    #codigo { flex: 0 0 180px; max-width: 180px; text-transform: uppercase; }
     button { margin-left: 0; cursor: pointer; min-height: 44px; border: none; border-radius: 8px; background: #0f766e; color: #fff; font-weight: bold; }
     .produto { background: #fff; border: 1px solid #d7d7d7; border-radius: 12px; padding: 14px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
     .tamanhos { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-top: 10px; }
@@ -43,6 +44,7 @@
       body { padding: 10px; }
       .input-area { flex-direction: column; align-items: stretch; }
       .input-area button { width: 100%; }
+      #codigo { max-width: 100%; }
       .tamanhos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .step-btn { width: 40px; height: 40px; }
       .tamanho input { width: 64px; height: 40px; }
@@ -72,6 +74,19 @@
   <script src="auth-db.js"></script>
   <script>
     AuthDB.exigirLogin();
+    const STORAGE_KEY = "controle_vestuario_state_v1";
+
+    function normalizarCodigo(valor) {
+      return (valor || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    }
+
+    function configurarCampoCodigo() {
+      const campoCodigo = document.getElementById("codigo");
+      campoCodigo.addEventListener("input", () => {
+        campoCodigo.value = normalizarCodigo(campoCodigo.value);
+        salvarEstado();
+      });
+    }
 
     function criarControleNumero(placeholder) {
       const container = document.createElement("div");
@@ -88,28 +103,24 @@
       menos.type = "button";
       menos.className = "step-btn";
       menos.textContent = "-";
+      menos.dataset.delta = "-1";
 
       const input = document.createElement("input");
       input.type = "number";
       input.min = "0";
       input.value = "0";
       input.placeholder = placeholder;
+      input.dataset.campo = placeholder === "Seção" ? "secao" : "estoque";
+
+      if (input.dataset.campo === "secao") {
+        input.classList.add("faltando");
+      }
 
       const mais = document.createElement("button");
       mais.type = "button";
       mais.className = "step-btn";
       mais.textContent = "+";
-
-      const alterar = (delta) => {
-        const atual = parseInt(input.value, 10);
-        const base = Number.isNaN(atual) ? 0 : atual;
-        const novoValor = Math.max(0, base + delta);
-        input.value = String(novoValor);
-        input.dispatchEvent(new Event("input"));
-      };
-
-      menos.addEventListener("click", () => alterar(-1));
-      mais.addEventListener("click", () => alterar(1));
+      mais.dataset.delta = "1";
 
       wrapper.appendChild(menos);
       wrapper.appendChild(input);
@@ -122,7 +133,8 @@
     }
 
     function adicionarProduto() {
-      const codigo = document.getElementById("codigo").value.trim();
+      const campoCodigo = document.getElementById("codigo");
+      const codigo = normalizarCodigo(campoCodigo.value.trim());
       if (codigo === "") return;
 
       const lista = document.getElementById("listaProdutos");
@@ -140,16 +152,6 @@
         bloco.className = "tamanho";
 
         const controleSecao = criarControleNumero("Seção");
-        const inputSecao = controleSecao.input;
-        inputSecao.classList.add("faltando");
-        inputSecao.addEventListener("input", () => {
-          if (inputSecao.value === "" || inputSecao.value === "0") {
-            inputSecao.classList.add("faltando");
-          } else {
-            inputSecao.classList.remove("faltando");
-          }
-        });
-
         const controleEstoque = criarControleNumero("Estoque");
 
         bloco.innerHTML = `<span>${t}</span>`;
@@ -168,16 +170,11 @@
       // Caixa de confirmação
       const confirmacao = document.createElement("div");
       confirmacao.innerHTML = `<label><input type="checkbox"> Confirmar OK</label>`;
-      const checkbox = confirmacao.querySelector("input");
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          moverParaFinalizados(produtoDiv);
-        }
-      });
       produtoDiv.appendChild(confirmacao);
 
       lista.prepend(produtoDiv);
-      document.getElementById("codigo").value = "";
+      campoCodigo.value = "";
+      salvarEstado();
     }
 
     function atualizarContadorFinalizados() {
@@ -189,6 +186,7 @@
     function alternarFinalizados() {
       const wrapper = document.getElementById("listaFinalizadosWrapper");
       wrapper.style.display = wrapper.style.display === "none" ? "block" : "none";
+      salvarEstado();
     }
 
     function moverParaFinalizados(produtoDiv) {
@@ -210,7 +208,105 @@
       const listaFinalizados = document.getElementById("listaFinalizados");
       listaFinalizados.prepend(itemFinalizado);
       atualizarContadorFinalizados();
+      salvarEstado();
     }
+
+    function atualizarDestaqueSecao(inputSecao) {
+      if (inputSecao.value === "" || inputSecao.value === "0") {
+        inputSecao.classList.add("faltando");
+      } else {
+        inputSecao.classList.remove("faltando");
+      }
+    }
+
+    function salvarEstado() {
+      const estado = {
+        listaProdutosHTML: document.getElementById("listaProdutos").innerHTML,
+        listaFinalizadosHTML: document.getElementById("listaFinalizados").innerHTML,
+        finalizadosAberto: document.getElementById("listaFinalizadosWrapper").style.display === "block"
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+    }
+
+    function carregarEstado() {
+      const texto = localStorage.getItem(STORAGE_KEY);
+      if (!texto) {
+        atualizarContadorFinalizados();
+        return;
+      }
+
+      try {
+        const estado = JSON.parse(texto);
+        document.getElementById("listaProdutos").innerHTML = estado.listaProdutosHTML || "";
+        document.getElementById("listaFinalizados").innerHTML = estado.listaFinalizadosHTML || "";
+
+        if (estado.finalizadosAberto) {
+          document.getElementById("listaFinalizadosWrapper").style.display = "block";
+        }
+
+        document.querySelectorAll('input[data-campo="secao"]').forEach(atualizarDestaqueSecao);
+      } catch (_erro) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      atualizarContadorFinalizados();
+    }
+
+    document.addEventListener("click", (event) => {
+      const stepBtn = event.target.closest(".step-btn");
+      if (!stepBtn) {
+        return;
+      }
+
+      const campo = stepBtn.parentElement ? stepBtn.parentElement.querySelector('input[type="number"]') : null;
+      if (!campo) {
+        return;
+      }
+
+      const delta = parseInt(stepBtn.dataset.delta || "0", 10);
+      if (Number.isNaN(delta)) {
+        return;
+      }
+
+      const valorAtual = parseInt(campo.value, 10);
+      const base = Number.isNaN(valorAtual) ? 0 : valorAtual;
+      campo.value = String(Math.max(0, base + delta));
+      campo.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    document.addEventListener("input", (event) => {
+      const alvo = event.target;
+
+      if (alvo.id === "codigo") {
+        alvo.value = normalizarCodigo(alvo.value);
+      }
+
+      if (alvo.matches('input[data-campo="secao"]')) {
+        atualizarDestaqueSecao(alvo);
+      }
+
+      if (alvo.closest(".produto")) {
+        salvarEstado();
+      }
+    });
+
+    document.addEventListener("change", (event) => {
+      const checkbox = event.target;
+      if (!checkbox.matches('.produto input[type="checkbox"]')) {
+        return;
+      }
+
+      if (checkbox.checked) {
+        const produto = checkbox.closest(".produto");
+        if (produto) {
+          moverParaFinalizados(produto);
+        }
+      }
+    });
+
+    configurarCampoCodigo();
+    carregarEstado();
   </script>
 </body>
 </html>
