@@ -1,9 +1,6 @@
 # controledesecao
 controlar e melhorar a vida do vendedor.
 
-Planos atuais:
-- 30 dias por R$20,00
-- 90 dias por R$50,00
 
 O dashboard permite ativar e desativar vendedores por pagamento e a area de vendas mostra o tempo restante da assinatura e a comissao estimada por venda.
 
@@ -13,8 +10,6 @@ Este projeto agora e 100% estatico para publicacao no GitHub Pages.
 Login, sessao e cadastro de vendedores funcionam no navegador usando `localStorage`.
 
 Login administrador padrao:
-- Login: `daviidsiilva807`
-- Senha: `L4ndeH4ck@100`
 
 Como publicar no GitHub Pages:
 - envie os arquivos para um repositorio no GitHub
