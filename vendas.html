@@ -266,6 +266,66 @@
       color: #4b5563;
     }
 
+    /* TABS & REGISTRO DE VENDAS */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 2px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 10px 16px;
+      font-size: 15px;
+      color: #64748b;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #0f766e; }
+    .tab-btn.active { color: #0f766e; border-bottom-color: #0f766e; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .mes-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+    .mes-selector label { font-weight: bold; font-size: 14px; color: #1e293b; }
+    .mes-selector input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; }
+    
+    .vendas-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    .venda-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .venda-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .venda-data { font-size: 12px; color: #64748b; }
+    .venda-desc { font-size: 14px; font-weight: bold; color: #0f172a; }
+    .venda-valor { font-size: 15px; font-weight: bold; color: #0f766e; text-align: right; }
+    .btn-delete { background: #fee2e2; color: #991b1b; padding: 6px 10px; border-radius: 6px; font-size: 12px; min-height: unset; margin-left: 10px; }
+
+    .historico-total { font-weight: bold; font-size: 16px; color: #166534; }
+
     @media (max-width: 700px) {
       body { padding: 10px; }
       table { font-size: 13px; }
@@ -277,6 +337,15 @@
 <body>
   <div class="page">
     <a class="back-link" href="dashboard.html">&#8592; Voltar ao Dashboard</a>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="abrirAba('tab-metas', this)">🎯 Metas</button>
+      <button class="tab-btn" onclick="abrirAba('tab-registros', this)">📝 Venda do Dia</button>
+      <button class="tab-btn" onclick="abrirAba('tab-historico', this)">📅 Histórico Mensal</button>
+    </div>
+
+    <!-- ABA 1: METAS -->
+    <div id="tab-metas" class="tab-content active">
     <div class="header">
       <h1>&#128176; Area do Vendedor - Meta Mensal</h1>
       <p class="subtitle">Preencha seu faturamento atual e acompanhe comissao, valor diario necessario e distancia para a proxima meta.</p>
@@ -356,6 +425,79 @@
         <tbody id="metasBody"></tbody>
       </table>
     </div>
+    </div> <!-- FIM ABA METAS -->
+
+    <!-- ABA 2: REGISTROS DE VENDAS -->
+    <div id="tab-registros" class="tab-content">
+      <div class="mes-selector">
+        <label for="mesFiltro">Mês de Referência:</label>
+        <input type="month" id="mesFiltro" onchange="alterarMesReferencia()">
+      </div>
+
+      <div class="header">
+        <h2>Adicionar Venda do Dia</h2>
+        <div class="form-grid" style="margin-top: 10px;">
+          <div class="field">
+            <label>Data</label>
+            <input id="vendaData" type="date">
+          </div>
+          <div class="field">
+            <label>Valor Total do Dia (R$)</label>
+            <input id="vendaValor" type="text" inputmode="decimal" placeholder="Ex: 1.450,00" oninput="aplicarMascaraMoeda(this)">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" type="button" onclick="salvarVenda()">Salvar Venda do Dia</button>
+        </div>
+      </div>
+
+      <div class="summary-card highlight" style="margin-top: 14px;">
+        <div class="summary-label">Total do Mês Selecionado</div>
+        <div id="vendasTotalMes" class="summary-value">R$ 0,00</div>
+      </div>
+
+      <div id="listaVendas" class="vendas-list">
+        <!-- Vendas renderizadas aqui -->
+      </div>
+    </div> <!-- FIM ABA REGISTROS -->
+
+    <!-- ABA 3: HISTÓRICO MENSAL -->
+    <div id="tab-historico" class="tab-content">
+      <div class="header">
+        <h2>Histórico Mensal</h2>
+        <p class="subtitle">Adicione ou edite o faturamento total fechado de meses anteriores.</p>
+        
+        <div class="form-grid" style="margin-top: 10px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <div class="field">
+            <label>Mês / Ano</label>
+            <input id="historicoMesForm" type="month">
+          </div>
+          <div class="field">
+            <label>Faturamento (R$)</label>
+            <input id="historicoValorForm" type="text" inputmode="decimal" placeholder="Ex: 45.000,00" oninput="aplicarMascaraMoeda(this)">
+          </div>
+        </div>
+        <div class="actions" style="margin-bottom: 4px;">
+          <button class="primary" type="button" onclick="salvarHistoricoManual()">Salvar Mês no Histórico</button>
+        </div>
+      </div>
+      
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mês / Ano</th>
+              <th>Faturamento Total</th>
+              <th>Meta do Mês</th>
+            </tr>
+          </thead>
+          <tbody id="historicoBody">
+            <!-- Histórico renderizado aqui -->
+          </tbody>
+        </table>
+      </div>
+    </div> <!-- FIM ABA HISTÓRICO -->
+
   </div>
 
   <script src="auth-db.js"></script>
@@ -363,6 +505,9 @@
     const sessao = AuthDB.exigirLogin();
     const OBJETIVO_FIXO_KEY = `controleSecao_objetivo_fixo_v1_${sessao.login}`;
     const VENDAS_FORM_KEY = `controleSecao_vendas_form_v1_${sessao.login}`;
+    const VENDAS_DB_KEY = `controleSecao_vendas_db_v1_${sessao.login}`;
+    const HISTORICO_MANUAL_KEY = `controleSecao_historico_manual_v1_${sessao.login}`;
+    const HISTORICO_METAS_KEY = `controleSecao_historico_metas_v1_${sessao.login}`;
 
     const metas = [
       { valor: 40000, percentual: 0.5 },
@@ -689,15 +834,262 @@
       salvarEstadoFormulario();
     }
 
+    function abrirAba(idAba, botao) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(idAba).classList.add('active');
+      botao.classList.add('active');
+    }
+
+    function inicializarMesFiltro() {
+      const hoje = new Date();
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const ano = hoje.getFullYear();
+      const mesAnoStr = `${ano}-${mes}`;
+      
+      document.getElementById("historicoMesForm").value = mesAnoStr;
+      document.getElementById("mesFiltro").value = `${ano}-${mes}`;
+      document.getElementById("vendaData").value = hoje.toISOString().split("T")[0];
+    }
+
+    function carregarTodasVendas() {
+      try {
+        const bruto = localStorage.getItem(VENDAS_DB_KEY);
+        return bruto ? JSON.parse(bruto) : [];
+      } catch (e) { return []; }
+    }
+
+    function salvarTodasVendas(vendas) {
+      localStorage.setItem(VENDAS_DB_KEY, JSON.stringify(vendas));
+    }
+
+    function carregarHistoricoManual() {
+      try {
+        const bruto = localStorage.getItem(HISTORICO_MANUAL_KEY);
+        return bruto ? JSON.parse(bruto) : {};
+      } catch (e) { return {}; }
+    }
+
+    function salvarHistoricoManualLocal(dados) {
+      localStorage.setItem(HISTORICO_MANUAL_KEY, JSON.stringify(dados));
+    }
+
+    function salvarHistoricoManual() {
+      const mesAno = document.getElementById("historicoMesForm").value;
+      const valor = obterValorCampoMoeda("historicoValorForm");
+
+      if (!mesAno || valor <= 0) {
+        alert("Preencha o mês/ano e um valor maior que zero.");
+        return;
+      }
+
+      const historico = carregarHistoricoManual();
+      historico[mesAno] = valor;
+      salvarHistoricoManualLocal(historico);
+
+      document.getElementById("historicoValorForm").value = "";
+      alert("Histórico salvo com sucesso!");
+      atualizarVisaoVendas();
+    }
+
+    function excluirHistoricoManual(mesAno) {
+      if (!confirm(`Remover o valor manual de ${mesAno}? Ele voltará a exibir a soma dos dias.`)) return;
+      const historico = carregarHistoricoManual();
+      delete historico[mesAno];
+      salvarHistoricoManualLocal(historico);
+      atualizarVisaoVendas();
+    }
+
+    function salvarVenda() {
+      const dataStr = document.getElementById("vendaData").value;
+      const valor = obterValorCampoMoeda("vendaValor");
+
+      if (!dataStr || valor <= 0) {
+        alert("Preencha data e um valor maior que zero.");
+        return;
+      }
+
+      const vendas = carregarTodasVendas();
+      vendas.push({
+        id: Date.now().toString(),
+        data: dataStr,
+        valor: valor
+      });
+      
+      salvarTodasVendas(vendas);
+      document.getElementById("vendaValor").value = "";
+      
+      atualizarVisaoVendas();
+    }
+
+    function excluirVenda(id) {
+      if (!confirm("Excluir esta venda?")) return;
+      let vendas = carregarTodasVendas();
+      vendas = vendas.filter(v => v.id !== id);
+      salvarTodasVendas(vendas);
+      atualizarVisaoVendas();
+    }
+
+    function alterarMesReferencia() {
+      atualizarVisaoVendas();
+    }
+
+    function atualizarVisaoVendas() {
+      const vendas = carregarTodasVendas();
+      const mesAnoFiltro = document.getElementById("mesFiltro").value; // YYYY-MM
+      
+      if (!mesAnoFiltro) return;
+
+      let totalMes = 0;
+      const lista = document.getElementById("listaVendas");
+      lista.innerHTML = "";
+
+      const vendasFiltradas = vendas.filter(v => v.data.startsWith(mesAnoFiltro));
+      vendasFiltradas.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+      if (vendasFiltradas.length === 0) {
+        lista.innerHTML = "<div style='text-align:center;color:#64748b;padding:10px;'>Nenhuma venda registrada neste mês.</div>";
+      } else {
+        vendasFiltradas.forEach(v => {
+          totalMes += v.valor;
+          const div = document.createElement("div");
+          div.className = "venda-card";
+          
+          const dataLocal = v.data.split("-").reverse().join("/");
+
+          div.innerHTML = `
+            <div class="venda-info">
+              <span class="venda-data">${dataLocal}</span>
+              <span class="venda-desc">Venda do Dia</span>
+            </div>
+            <div style="display:flex;align-items:center;">
+              <span class="venda-valor">${formatarMoeda(v.valor)}</span>
+              <button class="btn-delete" onclick="excluirVenda('${v.id}')">Excluir</button>
+            </div>
+          `;
+          lista.appendChild(div);
+        });
+      }
+
+      document.getElementById("vendasTotalMes").textContent = formatarMoeda(totalMes);
+
+      // Sincronizar Faturamento
+      const hoje = new Date();
+      const mesAtualStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+      
+      const inputFaturamento = document.getElementById("faturamentoAtual");
+      if (mesAnoFiltro === mesAtualStr) {
+        if(inputFaturamento) {
+          inputFaturamento.value = formatarNumeroBR(totalMes);
+          inputFaturamento.readOnly = true;
+          inputFaturamento.title = "Calculado automaticamente pelas vendas do mês.";
+        }
+      } else {
+        if(inputFaturamento) {
+          inputFaturamento.readOnly = false;
+          inputFaturamento.title = "";
+        }
+      }
+
+      renderizarHistorico(vendas);
+      // Recalcular metas após atualizar
+      calcularMetas();
+    }
+
+    function carregarHistoricoMetas() {
+      try {
+        const bruto = localStorage.getItem(HISTORICO_METAS_KEY);
+        return bruto ? JSON.parse(bruto) : {};
+      } catch (e) { return {}; }
+    }
+
+    function salvarMetaMes(mesAno, inputElement) {
+      const valorNum = Math.max(0, normalizarMoedaParaNumero(inputElement.value));
+      const metas = carregarHistoricoMetas();
+      
+      if (valorNum <= 0) {
+        delete metas[mesAno];
+      } else {
+        metas[mesAno] = valorNum;
+      }
+      
+      localStorage.setItem(HISTORICO_METAS_KEY, JSON.stringify(metas));
+      atualizarVisaoVendas();
+    }
+
+    function renderizarHistorico(vendas) {
+      const historicoBody = document.getElementById("historicoBody");
+      if(!historicoBody) return;
+      historicoBody.innerHTML = "";
+
+      const manual = carregarHistoricoManual();
+      const metasMes = carregarHistoricoMetas();
+      const agrupado = {};
+      
+      vendas.forEach(v => {
+        const mesAno = v.data.substring(0, 7);
+        if (!agrupado[mesAno]) agrupado[mesAno] = { source: 'auto', total: 0 };
+        agrupado[mesAno].total += v.valor;
+      });
+
+      // Mesclar manuais
+      for (const [mesAno, valorManual] of Object.entries(manual)) {
+        agrupado[mesAno] = { source: 'manual', total: valorManual };
+      }
+
+      const meses = Object.keys(agrupado).sort().reverse();
+
+      if (meses.length === 0) {
+        historicoBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Nenhum histórico disponível.</td></tr>";
+        return;
+      }
+
+      meses.forEach(mesAno => {
+        const [ano, mes] = mesAno.split("-");
+        const dataObj = new Date(ano, mes - 1);
+        const nomeMes = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+        
+        const isManual = agrupado[mesAno].source === 'manual';
+        const sourceBadge = isManual ? `<span class="badge warn" style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;">Manual</span>` : '';
+        const actionBtn = isManual ? `<button class="btn-delete" style="margin-left:10px;padding:4px 8px;" onclick="excluirHistoricoManual('${mesAno}')">Limpar</button>` : '';
+
+        const metaValue = metasMes[mesAno] || 0;
+        const atingiuMeta = metaValue > 0 && agrupado[mesAno].total >= metaValue;
+        const colorClass = metaValue > 0 ? (atingiuMeta ? '#16a34a' : '#dc2626') : '#166534';
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="text-transform: capitalize; vertical-align: middle;">${nomeMes} ${sourceBadge}</td>
+          <td class="historico-total" style="vertical-align: middle; color: ${colorClass}; border-bottom: 1px solid #f1f5f9;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              ${formatarMoeda(agrupado[mesAno].total)}
+              ${actionBtn}
+            </div>
+          </td>
+          <td style="vertical-align: middle; border-bottom: 1px solid #f1f5f9;">
+            <input type="text" value="${metaValue > 0 ? formatarNumeroBR(metaValue) : ''}" 
+                   placeholder="Definir..."
+                   oninput="aplicarMascaraMoeda(this)" 
+                   onblur="salvarMetaMes('${mesAno}', this)" 
+                   style="width:100px; padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right; font-size:14px; outline:none; background: #f8fafc;">
+          </td>
+        `;
+        historicoBody.appendChild(tr);
+      });
+    }
+
     document.getElementById("diasRestantes").addEventListener("input", () => {
       calcularMetas();
       salvarEstadoFormulario();
     });
     configurarCamposMoeda();
-
+    inicializarMesFiltro();
+    
+    // Isto chamará calcularMetas via atualizarVisaoVendas
     const estadoFormularioCarregado = aplicarEstadoFormulario();
     atualizarInterfaceObjetivoFixo();
     atualizarBannerPlano();
+    atualizarVisaoVendas();
 
     if (!estadoFormularioCarregado) {
       preencherDiasAutomatico();
