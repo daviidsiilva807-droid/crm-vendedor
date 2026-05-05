@@ -78,6 +78,7 @@
     <button type="button" id="toggleFinalizados" class="toggle-finalizados" onclick="alternarFinalizados()">Produtos Finalizados (0)</button>
     <div id="listaFinalizadosWrapper">
       <div id="listaFinalizados"></div>
+      <button type="button" class="limpar-finalizados" onclick="limparFinalizados()" style="width: 100%; margin-top: 10px; background: #c62828;">🗑️ Limpar Finalizados</button>
     </div>
   </div>
 
@@ -192,6 +193,16 @@
     function alternarFinalizados() {
       const wrapper = document.getElementById("listaFinalizadosWrapper");
       wrapper.style.display = wrapper.style.display === "none" ? "block" : "none";
+      salvarEstado();
+    }
+
+    function limparFinalizados() {
+      const confirmacao = confirm("Tem certeza que deseja limpar todos os produtos finalizados? Esta ação é irreversível.");
+      if (!confirmacao) return;
+
+      const listaFinalizados = document.getElementById("listaFinalizados");
+      listaFinalizados.innerHTML = "";
+      atualizarContadorFinalizados();
       salvarEstado();
     }
 

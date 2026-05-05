@@ -242,6 +242,81 @@
     .status.ok { color: #166534; }
     .status.error { color: #b91c1c; }
 
+    .item-badges {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .badge.potencial {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #60a5fa;
+    }
+
+    .badge.favorito {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fbbf24;
+    }
+
+    .item-produtos {
+      margin-top: 8px;
+      padding: 8px;
+      background: #faf9f7;
+      border-left: 3px solid #fbbf24;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.4;
+    }
+
+    .item-produtos-label {
+      font-weight: bold;
+      color: #92400e;
+      margin-bottom: 4px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge.notificacao {
+      background: #bfdbfe;
+      color: #1e40af;
+      border: 1px solid #60a5fa;
+    }
+
+    .checkbox-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .checkbox-field input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .checkbox-field label {
+      margin: 0;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
     @media (max-width: 700px) {
       body { padding: 10px; }
       .tabs .tab-btn { width: 100%; }
@@ -275,10 +350,20 @@
           <label for="clienteNumero">Numero</label>
           <input id="clienteNumero" type="tel" maxlength="20" placeholder="Ex: 11999998888">
         </div>
-        <div class="field">
-          <label for="clienteLoja">Loja</label>
-          <input id="clienteLoja" type="text" maxlength="80" placeholder="Ex: Shopping Central">
+      </div>
+      <div class="checkbox-group">
+        <div class="checkbox-field">
+          <input id="clientePotencial" type="checkbox">
+          <label for="clientePotencial">🔥 Potencial Alto</label>
         </div>
+        <div class="checkbox-field">
+          <input id="clienteFavorito" type="checkbox">
+          <label for="clienteFavorito">⭐ Favorito</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="clienteProdutos">Produtos desejados (para clientes favoritos)</label>
+        <textarea id="clienteProdutos" maxlength="300" placeholder="Ex: Tenis Campus, Shorts, Camiseta branca"></textarea>
       </div>
       <div class="actions">
         <button class="btn primary" type="button" onclick="cadastrarCliente()">Salvar cliente</button>
@@ -313,6 +398,12 @@
           <input id="reservaData" type="date">
         </div>
       </div>
+      <div class="checkbox-group">
+        <div class="checkbox-field">
+          <input id="reservaNotificacao" type="checkbox">
+          <label for="reservaNotificacao">🔔 Notificar nesta data</label>
+        </div>
+      </div>
       <div class="actions">
         <button class="btn primary" type="button" onclick="adicionarReserva()">Salvar reserva</button>
         <button class="btn secondary" type="button" onclick="limparFormularioReserva()">Limpar</button>
@@ -325,6 +416,7 @@
   </div>
 
   <script src="auth-db.js"></script>
+  <script src="notifications.js"></script>
   <script>
     const sessao = AuthDB.exigirLogin();
     const CLIENTES_KEY = `controleSecao_clientes_v1_${sessao.login}`;
@@ -387,7 +479,9 @@
       const dados = {
         nome: document.getElementById("clienteNome").value,
         numero: document.getElementById("clienteNumero").value,
-        loja: document.getElementById("clienteLoja").value,
+        potencial: document.getElementById("clientePotencial").checked,
+        favorito: document.getElementById("clienteFavorito").checked,
+        produtos: document.getElementById("clienteProdutos").value,
         atualizadoEm: new Date().toISOString()
       };
 
@@ -400,6 +494,7 @@
         produto: document.getElementById("reservaProduto").value,
         tamanho: document.getElementById("reservaTamanho").value,
         data: document.getElementById("reservaData").value,
+        notificacao: document.getElementById("reservaNotificacao").checked,
         atualizadoEm: new Date().toISOString()
       };
 
@@ -411,7 +506,9 @@
       if (draftCliente) {
         document.getElementById("clienteNome").value = draftCliente.nome || "";
         document.getElementById("clienteNumero").value = draftCliente.numero || "";
-        document.getElementById("clienteLoja").value = draftCliente.loja || "";
+        document.getElementById("clientePotencial").checked = Boolean(draftCliente.potencial);
+        document.getElementById("clienteFavorito").checked = Boolean(draftCliente.favorito);
+        document.getElementById("clienteProdutos").value = draftCliente.produtos || "";
       }
 
       const draftReserva = lerDraft(RESERVA_DRAFT_KEY);
@@ -420,20 +517,23 @@
         document.getElementById("reservaProduto").value = draftReserva.produto || "";
         document.getElementById("reservaTamanho").value = draftReserva.tamanho || "";
         document.getElementById("reservaData").value = draftReserva.data || "";
+        document.getElementById("reservaNotificacao").checked = Boolean(draftReserva.notificacao);
       }
     }
 
     function configurarAutoSaveDrafts() {
-      ["clienteNome", "clienteNumero", "clienteLoja"].forEach((id) => {
+      ["clienteNome", "clienteNumero", "clientePotencial", "clienteFavorito", "clienteProdutos"].forEach((id) => {
         const campo = document.getElementById(id);
         campo.addEventListener("input", salvarDraftCliente);
         campo.addEventListener("blur", salvarDraftCliente);
+        campo.addEventListener("change", salvarDraftCliente);
       });
 
-      ["reservaNome", "reservaProduto", "reservaTamanho", "reservaData"].forEach((id) => {
+      ["reservaNome", "reservaProduto", "reservaTamanho", "reservaData", "reservaNotificacao"].forEach((id) => {
         const campo = document.getElementById(id);
         campo.addEventListener("input", salvarDraftReserva);
         campo.addEventListener("blur", salvarDraftReserva);
+        campo.addEventListener("change", salvarDraftReserva);
       });
     }
 
@@ -479,7 +579,9 @@
     function limparFormularioCliente() {
       document.getElementById("clienteNome").value = "";
       document.getElementById("clienteNumero").value = "";
-      document.getElementById("clienteLoja").value = "";
+      document.getElementById("clientePotencial").checked = false;
+      document.getElementById("clienteFavorito").checked = false;
+      document.getElementById("clienteProdutos").value = "";
       localStorage.removeItem(CLIENTE_DRAFT_KEY);
       limparStatus("statusCadastro");
     }
@@ -487,10 +589,12 @@
     function cadastrarCliente() {
       const nome = document.getElementById("clienteNome").value.trim();
       const numero = document.getElementById("clienteNumero").value.trim();
-      const loja = document.getElementById("clienteLoja").value.trim();
+      const potencial = document.getElementById("clientePotencial").checked;
+      const favorito = document.getElementById("clienteFavorito").checked;
+      const produtos = document.getElementById("clienteProdutos").value.trim();
 
-      if (!nome || !numero || !loja) {
-        setStatus("statusCadastro", "Informe nome, numero e loja do cliente.", "error");
+      if (!nome || !numero) {
+        setStatus("statusCadastro", "Informe nome e numero do cliente.", "error");
         return;
       }
 
@@ -500,11 +604,13 @@
       }
 
       const clientes = lerStorage(CLIENTES_KEY);
-      clientes.unshift({
+      clientes.push({
         id: Date.now(),
         nome,
         numero,
-        loja,
+        potencial,
+        favorito,
+        produtos,
         criadoEm: new Date().toISOString()
       });
 
@@ -522,7 +628,15 @@
     }
 
     function renderizarClientes() {
-      const clientes = lerStorage(CLIENTES_KEY);
+      let clientes = lerStorage(CLIENTES_KEY);
+      
+      // Ordenar alfabeticamente por nome
+      clientes.sort((a, b) => {
+        const nomeA = (a.nome || "").toLowerCase();
+        const nomeB = (b.nome || "").toLowerCase();
+        return nomeA.localeCompare(nomeB, "pt-BR");
+      });
+
       const lista = document.getElementById("listaClientes");
       const vazio = document.getElementById("vazioClientes");
       lista.innerHTML = "";
@@ -531,7 +645,6 @@
 
       clientes.forEach((cliente) => {
         const numeroCliente = cliente.numero || cliente.telefone || "";
-        const lojaCliente = cliente.loja || cliente.observacao || "-";
         const numeroWhatsapp = normalizarTelefone(numeroCliente);
         const card = document.createElement("div");
         card.className = "item";
@@ -547,9 +660,37 @@
         linhaTelefone.className = "item-line";
         linhaTelefone.textContent = `Numero: ${formatarTelefoneVisual(numeroCliente)}`;
 
-        const linhaObservacao = document.createElement("div");
-        linhaObservacao.className = "item-line";
-        linhaObservacao.textContent = `Loja: ${lojaCliente}`;
+        // Adicionar badges para potencial e favorito
+        const badges = document.createElement("div");
+        badges.className = "item-badges";
+        
+        if (cliente.potencial) {
+          const badgePotencial = document.createElement("span");
+          badgePotencial.className = "badge potencial";
+          badgePotencial.textContent = "🔥 Potencial Alto";
+          badges.appendChild(badgePotencial);
+        }
+        
+        if (cliente.favorito) {
+          const badgeFavorito = document.createElement("span");
+          badgeFavorito.className = "badge favorito";
+          badgeFavorito.textContent = "⭐ Favorito";
+          badges.appendChild(badgeFavorito);
+        }
+
+        // Mostrar produtos desejados se cliente é favorito
+        let produtosDiv = null;
+        if (cliente.favorito && cliente.produtos) {
+          produtosDiv = document.createElement("div");
+          produtosDiv.className = "item-produtos";
+          const labelProdutos = document.createElement("div");
+          labelProdutos.className = "item-produtos-label";
+          labelProdutos.textContent = "📦 Produtos Desejados:";
+          const textoProdutos = document.createElement("div");
+          textoProdutos.textContent = cliente.produtos;
+          produtosDiv.appendChild(labelProdutos);
+          produtosDiv.appendChild(textoProdutos);
+        }
 
         const acoes = document.createElement("div");
         acoes.className = "item-actions";
@@ -571,7 +712,12 @@
         acoes.appendChild(botaoExcluir);
         card.appendChild(topo);
         card.appendChild(linhaTelefone);
-        card.appendChild(linhaObservacao);
+        if (badges.children.length > 0) {
+          card.appendChild(badges);
+        }
+        if (produtosDiv) {
+          card.appendChild(produtosDiv);
+        }
         card.appendChild(acoes);
 
         botaoExcluir.addEventListener("click", () => removerCliente(cliente.id));
@@ -584,6 +730,7 @@
       document.getElementById("reservaProduto").value = "";
       document.getElementById("reservaTamanho").value = "";
       document.getElementById("reservaData").value = "";
+      document.getElementById("reservaNotificacao").checked = false;
       localStorage.removeItem(RESERVA_DRAFT_KEY);
       limparStatus("statusReserva");
     }
@@ -601,6 +748,7 @@
       const produto = document.getElementById("reservaProduto").value.trim();
       const tamanho = document.getElementById("reservaTamanho").value.trim();
       const data = document.getElementById("reservaData").value;
+      const notificacao = document.getElementById("reservaNotificacao").checked;
 
       if (!nomeCliente || !produto || !tamanho || !data) {
         setStatus("statusReserva", "Preencha nome, produto, tamanho e data.", "error");
@@ -608,16 +756,26 @@
       }
 
       const reservas = lerStorage(RESERVAS_KEY);
-      reservas.unshift({
+      const novaReserva = {
         id: Date.now(),
         nomeCliente,
         produto,
         tamanho,
         data,
+        notificacao,
         criadoEm: new Date().toISOString()
-      });
+      };
 
+      reservas.unshift(novaReserva);
       gravarStorage(RESERVAS_KEY, reservas);
+      
+      // Se notificação ativada, agendar usando gerenciador
+      if (notificacao) {
+        gerenciadorNotificacoes.solicitarPermissao().then(() => {
+          gerenciadorNotificacoes.agendar(novaReserva);
+        });
+      }
+      
       limparFormularioReserva();
       setStatus("statusReserva", "Reserva cadastrada com sucesso.", "ok");
       renderizarReservas();
@@ -626,7 +784,33 @@
     function removerReserva(id) {
       const reservas = lerStorage(RESERVAS_KEY).filter((reserva) => reserva.id !== id);
       gravarStorage(RESERVAS_KEY, reservas);
+      
+      // Limpar notificação se existir
+      gerenciadorNotificacoes.limpar(id);
+      
       renderizarReservas();
+    }
+
+    function alternarNotificacao(reservaId, ativar) {
+      const reservas = lerStorage(RESERVAS_KEY);
+      const reserva = reservas.find(r => r.id === reservaId);
+      
+      if (reserva) {
+        reserva.notificacao = ativar;
+        gravarStorage(RESERVAS_KEY, reservas);
+        
+        if (ativar) {
+          gerenciadorNotificacoes.solicitarPermissao().then(() => {
+            gerenciadorNotificacoes.agendar(reserva);
+            setStatus("statusReserva", "Notificação ativada com sucesso.", "ok");
+          });
+        } else {
+          gerenciadorNotificacoes.limpar(reservaId);
+          setStatus("statusReserva", "Notificação desativada.", "ok");
+        }
+        
+        renderizarReservas();
+      }
     }
 
     function renderizarReservas() {
@@ -660,8 +844,35 @@
         linhaData.className = "item-line";
         linhaData.textContent = `Data: ${formatarData(reserva.data)}`;
 
+        // Badge de notificação
+        const badges = document.createElement("div");
+        badges.className = "item-badges";
+        
+        if (reserva.notificacao) {
+          const badgeNotificacao = document.createElement("span");
+          badgeNotificacao.className = "badge notificacao";
+          badgeNotificacao.textContent = "🔔 Notificação Ativa";
+          badges.appendChild(badgeNotificacao);
+        }
+
         const acoes = document.createElement("div");
         acoes.className = "item-actions";
+
+        // Botão para gerenciar notificação
+        const botaoNotificacao = document.createElement("button");
+        botaoNotificacao.className = "chip-btn";
+        botaoNotificacao.type = "button";
+        if (reserva.notificacao) {
+          botaoNotificacao.style.background = "#dbeafe";
+          botaoNotificacao.style.borderColor = "#60a5fa";
+          botaoNotificacao.style.color = "#1e40af";
+          botaoNotificacao.textContent = "🔔 Desativar notificação";
+        } else {
+          botaoNotificacao.style.background = "#f3f4f6";
+          botaoNotificacao.style.borderColor = "#cbd5e1";
+          botaoNotificacao.style.color = "#0f172a";
+          botaoNotificacao.textContent = "🔔 Ativar notificação";
+        }
 
         const botaoExcluir = document.createElement("button");
         botaoExcluir.className = "chip-btn remove";
@@ -669,12 +880,20 @@
         botaoExcluir.textContent = "Excluir";
 
         topo.appendChild(titulo);
+        acoes.appendChild(botaoNotificacao);
         acoes.appendChild(botaoExcluir);
         card.appendChild(topo);
         card.appendChild(linhaProduto);
         card.appendChild(linhaTamanho);
         card.appendChild(linhaData);
+        if (badges.children.length > 0) {
+          card.appendChild(badges);
+        }
         card.appendChild(acoes);
+
+        botaoNotificacao.addEventListener("click", () => {
+          alternarNotificacao(reserva.id, !reserva.notificacao);
+        });
 
         botaoExcluir.addEventListener("click", () => removerReserva(reserva.id));
         lista.appendChild(card);
@@ -685,6 +904,14 @@
     configurarAutoSaveDrafts();
     renderizarClientes();
     renderizarReservas();
+    
+    // Reagendar notificações pendentes ao carregar a página
+    const reservas = lerStorage(RESERVAS_KEY);
+    reservas.forEach(reserva => {
+      if (reserva.notificacao) {
+        gerenciadorNotificacoes.agendar(reserva);
+      }
+    });
   </script>
 </body>
 </html>
