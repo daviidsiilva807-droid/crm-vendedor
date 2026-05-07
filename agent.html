@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src 'self' https://api.openai.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Agente">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <title>Agente de Marketing - Controle de Secao</title>
+  <style>
+    :root {
+      --bg-1: #052e2b;
+      --bg-2: #0f766e;
+      --bg-3: #f59e0b;
+      --card: rgba(255, 255, 255, 0.94);
+      --card-strong: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --line: #cbd5e1;
+      --accent: #0f766e;
+      --accent-soft: #d1fae5;
+      --warning: #b45309;
+      --danger: #b91c1c;
+      --shadow: 0 20px 60px rgba(2, 6, 23, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.40), transparent 34%),
+        radial-gradient(circle at top right, rgba(245, 158, 11, 0.28), transparent 32%),
+        linear-gradient(145deg, rgba(5, 46, 43, 0.96), rgba(15, 118, 110, 0.82) 48%, rgba(2, 6, 23, 0.95)),
+        url("img/logoadidas.png") center / cover fixed no-repeat;
+      padding: 18px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.08) 48%, transparent 100%);
+      pointer-events: none;
+      transform: translateX(-60%);
+      animation: sheen 10s infinite linear;
+      opacity: 0.75;
+    }
+
+    @keyframes sheen {
+      0% { transform: translateX(-60%); }
+      100% { transform: translateX(60%); }
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      color: #fff;
+      margin-bottom: 14px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 4.5vw, 2rem);
+      letter-spacing: -0.02em;
+    }
+
+    .topbar p {
+      margin: 5px 0 0;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 14px;
+      max-width: 700px;
+      line-height: 1.45;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.96);
+      color: var(--accent);
+      font-weight: bold;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 10px 20px rgba(2, 6, 23, 0.15);
+      white-space: nowrap;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .access-card,
+    .panel {
+      border-radius: 22px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .access-card {
+      display: none;
+      padding: 20px;
+      margin-top: 14px;
+    }
+
+    .access-card h2 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+    }
+
+    .access-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .panel {
+      display: none;
+      margin-top: 14px;
+      padding: 18px;
+    }
+
+    .intro {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 14px;
+      align-items: stretch;
+      margin-bottom: 14px;
+    }
+
+    .hero,
+    .status-card {
+      border-radius: 18px;
+      padding: 18px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border: 1px solid #dbeafe;
+    }
+
+    .hero h2,
+    .status-card h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .hero p,
+    .status-card p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .hero strong {
+      color: var(--accent);
+    }
+
+    .status-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: linear-gradient(180deg, #ecfeff, #eef2ff);
+    }
+
+    .status-card .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-start;
+      margin-bottom: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #14532d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .marketing-ai {
+      display: block;
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+
+    .marketing-ai-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .marketing-ai-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .marketing-ai-note {
+      font-size: 12px;
+      color: #475569;
+    }
+
+    .marketing-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .marketing-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .marketing-field label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .marketing-field input,
+    .marketing-field select,
+    .marketing-field textarea {
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #0f172a;
+      background: #fff;
+      width: 100%;
+    }
+
+    .marketing-field textarea {
+      min-height: 94px;
+      resize: vertical;
+    }
+
+    .marketing-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .link-btn {
+      min-height: 44px;
+      border-radius: 12px;
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .link-main {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .link-sub {
+      background: #eef2ff;
+      color: #1e3a8a;
+      border: 1px solid #c7d2fe;
+    }
+
+    .marketing-status {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .marketing-status.error {
+      color: var(--danger);
+    }
+
+    .marketing-result {
+      margin-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .marketing-result-block {
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #fff;
+      padding: 14px;
+    }
+
+    .marketing-result-block strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #0f172a;
+    }
+
+    .marketing-result-text {
+      white-space: pre-wrap;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .mini-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--warning);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 860px) {
+      .intro {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 12px;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .topbar {
+        padding: 14px;
+      }
+
+      .marketing-actions {
+        flex-direction: column;
+      }
+
+      .link-btn,
+      .back-link {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div>
+        <h1>&#129302; Agente de Marketing</h1>
+        <p>Use esta página para gerar conteúdo com o ChatGPT quando estiver logado como administrador. O acesso completo fica restrito ao admin, e o gerador local continua como fallback.</p>
+        <div class="pill-row">
+          <span class="pill">Área restrita</span>
+          <span class="pill">Modo local + IA</span>
+          <span class="pill">Configuração salva só neste navegador</span>
+        </div>
+      </div>
+      <a class="back-link" href="dashboard.html">Voltar ao dashboard</a>
+    </div>
+
+    <section id="acessoRestrito" class="access-card">
+      <h2>Acesso restrito</h2>
+      <p>Esta página é exclusiva do administrador. Faça login com a conta admin para usar o agente completo.</p>
+    </section>
+
+    <main id="agentApp" class="panel">
+      <div class="intro">
+        <section class="hero">
+          <h2>Comande o conteúdo da loja em um painel único</h2>
+          <p>
+            Preencha o produto, o objetivo e o canal. Se quiser gerar com ChatGPT, marque a opção da IA e informe a chave mascarada no navegador.
+            Se a integração falhar ou não estiver ativada, o sistema usa o gerador local automaticamente.
+          </p>
+          <p>
+            <strong>Importante:</strong> a chave que você enviou aqui ficou exposta nesta conversa. Não vou embutir esse segredo no código. O caminho seguro é rotacionar essa chave e colar a nova apenas neste navegador.
+          </p>
+        </section>
+
+        <aside class="status-card">
+          <div class="badge">Admin ativo</div>
+          <h2>Status do agente</h2>
+          <p id="agentStatusResumo">Verificando sessão...</p>
+        </aside>
+      </div>
+
+      <section id="marketingAiConfig" class="marketing-ai">
+        <div class="marketing-ai-header">
+          <label class="marketing-ai-label" for="marketingUsarChatGPT">
+            <input id="marketingUsarChatGPT" type="checkbox">
+            Usar ChatGPT na geração
+          </label>
+          <span class="marketing-ai-note">A chave da OpenAI é protegida no servidor.</span>
+        </div>
+
+        <div class="marketing-grid">
+          <div class="marketing-field">
+            <label for="marketingModeloIA">Modelo da IA</label>
+            <input id="marketingModeloIA" type="text" placeholder="gpt-5.5" value="gpt-5.5">
+          </div>
+        </div>
+      </section>
+
+      <section style="margin-top: 14px;">
+        <div class="marketing-grid">
+          <div class="marketing-field">
+            <label for="marketingProduto">Produto ou campanha</label>
+            <input id="marketingProduto" type="text" placeholder="Ex: Tênis Campus 00s, promoção de inverno">
+          </div>
+          <div class="marketing-field">
+            <label for="marketingCategoria">Categoria</label>
+            <select id="marketingCategoria">
+              <option value="tenis">Tenis</option>
+              <option value="vestuario">Vestuario</option>
+              <option value="acessorios">Acessorios</option>
+              <option value="promocao">Promocao</option>
+              <option value="reserva">Reserva de cliente</option>
+            </select>
+          </div>
+          <div class="marketing-field">
+            <label for="marketingObjetivo">Objetivo</label>
+            <select id="marketingObjetivo">
+              <option value="venda">Vender agora</option>
+              <option value="lancamento">Lancar produto</option>
+              <option value="queima">Queima de estoque</option>
+              <option value="engajamento">Gerar engajamento</option>
+              <option value="reserva">Chamar para reserva</option>
+            </select>
+          </div>
+          <div class="marketing-field">
+            <label for="marketingCanal">Canal principal</label>
+            <select id="marketingCanal">
+              <option value="instagram">Instagram Feed</option>
+              <option value="stories">Stories</option>
+              <option value="reels">Reels</option>
+              <option value="whatsapp">WhatsApp</option>
+            </select>
+          </div>
+          <div class="marketing-field">
+            <label for="marketingPublico">Público-alvo</label>
+            <input id="marketingPublico" type="text" placeholder="Ex: jovens, atletas, clientes premium">
+          </div>
+          <div class="marketing-field">
+            <label for="marketingTom">Tom da comunicação</label>
+            <select id="marketingTom">
+              <option value="direto">Direto e vendedor</option>
+              <option value="premium">Premium e elegante</option>
+              <option value="urgente">Urgente e promocional</option>
+              <option value="proximidade">Próximo e acolhedor</option>
+            </select>
+          </div>
+          <div class="marketing-field">
+            <label for="marketingData">Data sugerida</label>
+            <input id="marketingData" type="date">
+          </div>
+          <div class="marketing-field">
+            <label for="marketingHora">Hora sugerida</label>
+            <input id="marketingHora" type="time">
+          </div>
+        </div>
+
+        <div class="marketing-field" style="margin-top: 12px;">
+          <label for="marketingDetalhes">Detalhes extras</label>
+          <textarea id="marketingDetalhes" placeholder="Ex: desconto, cores, numeração, frete, urgência, benefícios, estoque limitado"></textarea>
+        </div>
+
+        <div class="marketing-actions">
+          <button class="link-btn link-main" type="button" onclick="gerarConteudoMarketing()">Gerar conteúdo</button>
+          <button class="link-btn link-sub" type="button" onclick="copiarConteudoMarketing()">Copiar resultado</button>
+          <button class="link-btn link-sub" type="button" onclick="preencherMarketingPadrao()">Preencher exemplo</button>
+        </div>
+
+        <div id="statusMarketing" class="marketing-status"></div>
+        <div class="mini-note">Se o ChatGPT não responder, a saída local continua disponível para manter o fluxo de trabalho.</div>
+
+        <div class="marketing-result">
+          <div class="marketing-result-block">
+            <strong>Post principal</strong>
+            <div id="marketingPost" class="marketing-result-text">Preencha os campos e clique em Gerar conteúdo.</div>
+          </div>
+          <div class="marketing-result-block">
+            <strong>Legenda pronta</strong>
+            <div id="marketingLegenda" class="marketing-result-text">A legenda vai aparecer aqui.</div>
+          </div>
+          <div class="marketing-result-block">
+            <strong>Calendário de postagem</strong>
+            <div id="marketingAgenda" class="marketing-result-text">Sugestão de dias e horas vai aparecer aqui.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="auth-db.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+    const ehAdmin = Boolean(sessao && sessao.papel === "admin" && sessao.login.toLowerCase() === "daviidsiilva807");
+    window.CONTROLE_SECAO_ADMIN = ehAdmin;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const app = document.getElementById('agentApp');
+      const acessoRestrito = document.getElementById('acessoRestrito');
+      const statusResumo = document.getElementById('agentStatusResumo');
+
+      if (!ehAdmin) {
+        if (app) app.style.display = 'none';
+        if (acessoRestrito) acessoRestrito.style.display = 'block';
+        return;
+      }
+
+      if (acessoRestrito) acessoRestrito.style.display = 'none';
+      if (app) app.style.display = 'block';
+      if (statusResumo) {
+        statusResumo.textContent = `Sessão atual: ${sessao.login}. O ChatGPT fica disponível apenas para uso administrativo.`;
+      }
+      const config = document.getElementById('marketingAiConfig');
+      if (config) config.style.display = 'block';
+    });
+  </script>
+  <script src="marketing-agent.js"></script>
+</body>
+</html>

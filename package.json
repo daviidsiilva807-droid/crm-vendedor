@@ -1,0 +1,27 @@
+{
+  "name": "controle-secao",
+  "version": "2.2.0",
+  "description": "CRM Vendedor com Agente de Marketing IA",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "proxy": "node server.js"
+  },
+  "keywords": [
+    "crm",
+    "vendedor",
+    "agente",
+    "marketing",
+    "ia",
+    "openai"
+  ],
+  "author": "Davi Silva",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {}
+}

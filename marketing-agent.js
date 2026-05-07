@@ -119,15 +119,13 @@
     if (!window.CONTROLE_SECAO_ADMIN) {
       return {
         enabled: false,
-        apiKey: '',
-        model: 'gpt-4.1-mini'
+        model: 'gpt-5.5'
       };
     }
 
     const padrao = {
       enabled: false,
-      apiKey: '',
-      model: 'gpt-4.1-mini'
+      model: 'gpt-5.5'
     };
 
     try {
@@ -143,7 +141,6 @@
 
       return {
         enabled: Boolean(dados.enabled),
-        apiKey: String(dados.apiKey || '').trim(),
         model: String(dados.model || padrao.model).trim() || padrao.model
       };
     } catch (erro) {
@@ -159,8 +156,7 @@
     try {
       const dados = {
         enabled: $('marketingUsarChatGPT')?.checked === true,
-        apiKey: $('marketingApiKey')?.value.trim() || '',
-        model: $('marketingModeloIA')?.value.trim() || 'gpt-4.1-mini',
+        model: $('marketingModeloIA')?.value.trim() || 'gpt-5.5',
         atualizadoEm: new Date().toISOString()
       };
 
@@ -177,16 +173,14 @@
       }
 
       if ($('marketingUsarChatGPT')) $('marketingUsarChatGPT').checked = false;
-      if ($('marketingApiKey')) $('marketingApiKey').value = '';
-      if ($('marketingModeloIA')) $('marketingModeloIA').value = 'gpt-4.1-mini';
+      if ($('marketingModeloIA')) $('marketingModeloIA').value = 'gpt-5.5';
       return;
     }
 
     const dados = obterConfiguracaoIA();
 
     if ($('marketingUsarChatGPT')) $('marketingUsarChatGPT').checked = Boolean(dados.enabled);
-    if ($('marketingApiKey')) $('marketingApiKey').value = dados.apiKey || '';
-    if ($('marketingModeloIA')) $('marketingModeloIA').value = dados.model || 'gpt-4.1-mini';
+    if ($('marketingModeloIA')) $('marketingModeloIA').value = dados.model || 'gpt-5.5';
   }
 
   function configurarIAListeners() {
@@ -194,7 +188,7 @@
       return;
     }
 
-    ['marketingUsarChatGPT', 'marketingApiKey', 'marketingModeloIA']
+    ['marketingUsarChatGPT', 'marketingModeloIA']
       .forEach((id) => {
         const campo = $(id);
         if (!campo) {
@@ -304,29 +298,20 @@
       return null;
     }
 
-    if (!configuracao.apiKey) {
-      throw new Error('Informe a chave da OpenAI para usar o ChatGPT.');
-    }
+    // Determinar URL do proxy (detectar automaticamente em produção)
+    const proxyUrl = window.location.hostname === 'localhost'
+      ? 'http://localhost:3000/api/openai-proxy'
+      : `${window.location.origin}/api/openai-proxy`;
 
-    const resposta = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resposta = await fetch(proxyUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${configuracao.apiKey}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: configuracao.model || 'gpt-4.1-mini',
-        temperature: 0.7,
-        messages: [
-          {
-            role: 'system',
-            content: 'Responda somente com JSON válido contendo as chaves postPrincipal, legenda e agenda.'
-          },
-          {
-            role: 'user',
-            content: montarPromptChatGPT(dados)
-          }
-        ]
+        prompt: montarPromptChatGPT(dados),
+        model: configuracao.model || 'gpt-5.5',
+        temperature: 0.7
       })
     });
 
@@ -334,19 +319,20 @@
     try {
       payload = await resposta.json();
     } catch (erro) {
-      throw new Error('Nao foi possivel ler a resposta do ChatGPT.');
+      throw new Error('Nao foi possivel ler a resposta do proxy.');
     }
 
-    if (!resposta.ok) {
-      const mensagem = payload?.error?.message || `Falha ao gerar conteúdo (${resposta.status}).`;
+    if (!payload.success) {
+      const mensagem = payload.error || `Falha ao gerar conteúdo (${resposta.status}).`;
       throw new Error(mensagem);
     }
 
-    const texto = extrairTextoRespostaOpenAI(payload);
+    const openaiData = payload.data;
+    const texto = extrairTextoRespostaOpenAI(openaiData);
     const resultado = normalizarResultadoIA(extrairJsonDoTexto(texto));
 
     if (!resultado) {
-      throw new Error('ChatGPT respondeu, mas o formato veio invalido.');
+      throw new Error('A resposta da IA veio em formato inválido.');
     }
 
     return resultado;

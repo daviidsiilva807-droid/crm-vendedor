@@ -511,114 +511,11 @@
       </section>
     </div>
 
-    <section class="marketing-card">
+    <section class="card">
       <h2>&#129302; Agente de Marketing</h2>
-      <p>Crie posts, legendas, descricoes, CTA, hashtags e sugestao de dias e horas de postagem para vender mais.</p>
-
-      <div id="marketingAiConfig" class="marketing-ai">
-        <div class="marketing-ai-header">
-          <label class="marketing-ai-label" for="marketingUsarChatGPT">
-            <input id="marketingUsarChatGPT" type="checkbox">
-            Usar ChatGPT na geração
-          </label>
-          <span class="marketing-ai-note">Opcional. A chave fica salva apenas neste navegador.</span>
-        </div>
-
-        <div class="marketing-grid marketing-ai-grid">
-          <div class="marketing-field">
-            <label for="marketingApiKey">OpenAI API key</label>
-            <input id="marketingApiKey" type="password" placeholder="sk-...">
-          </div>
-          <div class="marketing-field">
-            <label for="marketingModeloIA">Modelo</label>
-            <input id="marketingModeloIA" type="text" placeholder="gpt-4.1-mini">
-          </div>
-        </div>
-      </div>
-
-      <div class="marketing-grid">
-        <div class="marketing-field">
-          <label for="marketingProduto">Produto ou campanha</label>
-          <input id="marketingProduto" type="text" placeholder="Ex: Tenis Campus 00s, promocao de inverno">
-        </div>
-        <div class="marketing-field">
-          <label for="marketingCategoria">Categoria</label>
-          <select id="marketingCategoria">
-            <option value="tenis">Tenis</option>
-            <option value="vestuario">Vestuario</option>
-            <option value="acessorios">Acessorios</option>
-            <option value="promocao">Promocao</option>
-            <option value="reserva">Reserva de cliente</option>
-          </select>
-        </div>
-        <div class="marketing-field">
-          <label for="marketingObjetivo">Objetivo</label>
-          <select id="marketingObjetivo">
-            <option value="venda">Vender agora</option>
-            <option value="lancamento">Lancar produto</option>
-            <option value="queima">Queima de estoque</option>
-            <option value="engajamento">Gerar engajamento</option>
-            <option value="reserva">Chamar para reserva</option>
-          </select>
-        </div>
-        <div class="marketing-field">
-          <label for="marketingCanal">Canal principal</label>
-          <select id="marketingCanal">
-            <option value="instagram">Instagram Feed</option>
-            <option value="stories">Stories</option>
-            <option value="reels">Reels</option>
-            <option value="whatsapp">WhatsApp</option>
-          </select>
-        </div>
-        <div class="marketing-field">
-          <label for="marketingPublico">Publico-alvo</label>
-          <input id="marketingPublico" type="text" placeholder="Ex: jovens, atletas, clientes premium">
-        </div>
-        <div class="marketing-field">
-          <label for="marketingTom">Tom da comunicacao</label>
-          <select id="marketingTom">
-            <option value="direto">Direto e vendedor</option>
-            <option value="premium">Premium e elegante</option>
-            <option value="urgente">Urgente e promocional</option>
-            <option value="proximidade">Próximo e acolhedor</option>
-          </select>
-        </div>
-        <div class="marketing-field">
-          <label for="marketingData">Data sugerida</label>
-          <input id="marketingData" type="date">
-        </div>
-        <div class="marketing-field">
-          <label for="marketingHora">Hora sugerida</label>
-          <input id="marketingHora" type="time">
-        </div>
-      </div>
-
-      <div class="marketing-field" style="margin-top: 12px;">
-        <label for="marketingDetalhes">Detalhes extras</label>
-        <textarea id="marketingDetalhes" placeholder="Ex: desconto, cores, numeração, frete, urgência, benefícios, estoque limitado"></textarea>
-      </div>
-
-      <div class="marketing-actions">
-        <button class="link-btn link-main" type="button" onclick="gerarConteudoMarketing()">Gerar conteudo</button>
-        <button class="link-btn link-sub" type="button" onclick="copiarConteudoMarketing()">Copiar resultado</button>
-        <button class="link-btn link-sub" type="button" onclick="preencherMarketingPadrao()">Preencher exemplo</button>
-      </div>
-
-      <div id="statusMarketing" class="marketing-status"></div>
-
-      <div class="marketing-result">
-        <div class="marketing-result-block">
-          <strong>Post principal</strong>
-          <div id="marketingPost" class="marketing-result-text">Preencha os campos e clique em Gerar conteudo.</div>
-        </div>
-        <div class="marketing-result-block">
-          <strong>Legenda pronta</strong>
-          <div id="marketingLegenda" class="marketing-result-text">A legenda vai aparecer aqui.</div>
-        </div>
-        <div class="marketing-result-block">
-          <strong>Calendario de postagem</strong>
-          <div id="marketingAgenda" class="marketing-result-text">Sugestao de dias e horas vai aparecer aqui.</div>
-        </div>
+      <p>Acesse a página dedicada do agente para gerar conteúdo com ChatGPT ou com o gerador local. O acesso completo é exclusivo do administrador.</p>
+      <div class="links">
+        <a class="link-btn link-main" href="agent.html">Abrir agente</a>
       </div>
     </section>
 
@@ -661,7 +558,6 @@
   </div>
 
   <script src="auth-db.js"></script>
-  <script src="marketing-agent.js"></script>
   <script>
     const sessao = AuthDB.exigirLogin();
     let ehAdmin = false;

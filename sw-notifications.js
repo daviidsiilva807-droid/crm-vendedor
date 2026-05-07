@@ -1,9 +1,10 @@
 // Service Worker para gerenciar notificações de reservas
-const CACHE_NAME = 'controle-secao-v4';
+const CACHE_NAME = 'controle-secao-v5';
 const urlsCache = [
   '/',
   '/index.html',
   '/dashboard.html',
+  '/agent.html',
   '/clientes.html',
   '/style.css',
   '/transitions.js',
