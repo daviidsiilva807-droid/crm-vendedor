@@ -192,6 +192,109 @@
       font-size: 14px;
     }
 
+    .marketing-card {
+      margin-top: 12px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    .marketing-card h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .marketing-card p {
+      margin: 8px 0 0;
+      color: #4b5563;
+      font-size: 14px;
+    }
+
+    .marketing-grid {
+      margin-top: 12px;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .marketing-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .marketing-field label {
+      font-size: 13px;
+      font-weight: bold;
+      color: #334155;
+    }
+
+    .marketing-field input,
+    .marketing-field select,
+    .marketing-field textarea {
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #0f172a;
+      background: #fff;
+    }
+
+    .marketing-field textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    .marketing-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .marketing-result {
+      margin-top: 14px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .marketing-result-block {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    .marketing-result-block strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #0f172a;
+    }
+
+    .marketing-result-text {
+      white-space: pre-wrap;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .marketing-status {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #0f766e;
+    }
+
+    .marketing-status.error {
+      color: #b91c1c;
+    }
+
     .links {
       margin-top: 12px;
       display: flex;
@@ -259,12 +362,26 @@
       color: #334155;
     }
 
-    .admin-field input {
+    .admin-field input:not([type="checkbox"]) {
       min-height: 42px;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
       padding: 10px 12px;
       font-size: 14px;
+    }
+
+    .checkbox-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .checkbox-field input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      padding: 0;
+      accent-color: #0f766e;
     }
 
     .admin-actions {
@@ -326,6 +443,96 @@
       </section>
     </div>
 
+    <section class="marketing-card">
+      <h2>&#129302; Agente de Marketing</h2>
+      <p>Crie posts, legendas, descricoes, CTA, hashtags e sugestao de dias e horas de postagem para vender mais.</p>
+
+      <div class="marketing-grid">
+        <div class="marketing-field">
+          <label for="marketingProduto">Produto ou campanha</label>
+          <input id="marketingProduto" type="text" placeholder="Ex: Tenis Campus 00s, promocao de inverno">
+        </div>
+        <div class="marketing-field">
+          <label for="marketingCategoria">Categoria</label>
+          <select id="marketingCategoria">
+            <option value="tenis">Tenis</option>
+            <option value="vestuario">Vestuario</option>
+            <option value="acessorios">Acessorios</option>
+            <option value="promocao">Promocao</option>
+            <option value="reserva">Reserva de cliente</option>
+          </select>
+        </div>
+        <div class="marketing-field">
+          <label for="marketingObjetivo">Objetivo</label>
+          <select id="marketingObjetivo">
+            <option value="venda">Vender agora</option>
+            <option value="lancamento">Lancar produto</option>
+            <option value="queima">Queima de estoque</option>
+            <option value="engajamento">Gerar engajamento</option>
+            <option value="reserva">Chamar para reserva</option>
+          </select>
+        </div>
+        <div class="marketing-field">
+          <label for="marketingCanal">Canal principal</label>
+          <select id="marketingCanal">
+            <option value="instagram">Instagram Feed</option>
+            <option value="stories">Stories</option>
+            <option value="reels">Reels</option>
+            <option value="whatsapp">WhatsApp</option>
+          </select>
+        </div>
+        <div class="marketing-field">
+          <label for="marketingPublico">Publico-alvo</label>
+          <input id="marketingPublico" type="text" placeholder="Ex: jovens, atletas, clientes premium">
+        </div>
+        <div class="marketing-field">
+          <label for="marketingTom">Tom da comunicacao</label>
+          <select id="marketingTom">
+            <option value="direto">Direto e vendedor</option>
+            <option value="premium">Premium e elegante</option>
+            <option value="urgente">Urgente e promocional</option>
+            <option value="proximidade">Próximo e acolhedor</option>
+          </select>
+        </div>
+        <div class="marketing-field">
+          <label for="marketingData">Data sugerida</label>
+          <input id="marketingData" type="date">
+        </div>
+        <div class="marketing-field">
+          <label for="marketingHora">Hora sugerida</label>
+          <input id="marketingHora" type="time">
+        </div>
+      </div>
+
+      <div class="marketing-field" style="margin-top: 12px;">
+        <label for="marketingDetalhes">Detalhes extras</label>
+        <textarea id="marketingDetalhes" placeholder="Ex: desconto, cores, numeração, frete, urgência, benefícios, estoque limitado"></textarea>
+      </div>
+
+      <div class="marketing-actions">
+        <button class="link-btn link-main" type="button" onclick="gerarConteudoMarketing()">Gerar conteudo</button>
+        <button class="link-btn link-sub" type="button" onclick="copiarConteudoMarketing()">Copiar resultado</button>
+        <button class="link-btn link-sub" type="button" onclick="preencherMarketingPadrao()">Preencher exemplo</button>
+      </div>
+
+      <div id="statusMarketing" class="marketing-status"></div>
+
+      <div class="marketing-result">
+        <div class="marketing-result-block">
+          <strong>Post principal</strong>
+          <div id="marketingPost" class="marketing-result-text">Preencha os campos e clique em Gerar conteudo.</div>
+        </div>
+        <div class="marketing-result-block">
+          <strong>Legenda pronta</strong>
+          <div id="marketingLegenda" class="marketing-result-text">A legenda vai aparecer aqui.</div>
+        </div>
+        <div class="marketing-result-block">
+          <strong>Calendario de postagem</strong>
+          <div id="marketingAgenda" class="marketing-result-text">Sugestao de dias e horas vai aparecer aqui.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="adminCard" class="admin-card">
       <h2>&#128274; Administrador - Cadastro de vendedores</h2>
       <p>Apenas o usuario administrador daviidsiilva807 pode criar novos logins.</p>
@@ -338,6 +545,13 @@
         <div class="admin-field">
           <label for="novaSenha">Senha</label>
           <input id="novaSenha" type="password" placeholder="Minimo 4 caracteres">
+        </div>
+        <div class="admin-field">
+          <label>Adicionar Agente de Marketing (taxa extra)</label>
+          <div class="checkbox-field">
+            <input id="novoAgente" type="checkbox">
+            <label for="novoAgente">Conceder acesso ao Agente</label>
+          </div>
         </div>
       </div>
 
@@ -358,6 +572,7 @@
   </div>
 
   <script src="auth-db.js"></script>
+  <script src="marketing-agent.js"></script>
   <script>
     const sessao = AuthDB.exigirLogin();
     let ehAdmin = false;
@@ -475,6 +690,7 @@
 
       const novoLogin = document.getElementById("novoLogin").value.trim();
       const novaSenha = document.getElementById("novaSenha").value;
+      const novoAgente = document.getElementById("novoAgente")?.checked === true;
       const resultado = AuthDB.criarUsuarioVendedor(novoLogin, novaSenha, sessao.login);
 
       if (!resultado.ok) {
@@ -486,6 +702,10 @@
       document.getElementById("novaSenha").value = "";
       setStatus(resultado.mensagem, "ok");
       atualizarListaVendedores();
+      // após criar, se checkbox marcado, ativar agente cobrando admin
+      if (resultado.ok && novoAgente) {
+        AuthDB.definirAgente(novoLogin, true, sessao.login);
+      }
     }
 
     function atualizarListaVendedores() {
@@ -534,6 +754,15 @@
         credenciais.className = "usuario-credenciais";
         credenciais.textContent = `Login: ${vendedor.login} | Senha: ${vendedor.senha || "-"}`;
 
+        // Badge de agente
+        if (vendedor.agente) {
+          const badgeAgente = document.createElement("span");
+          badgeAgente.className = "badge ok";
+          badgeAgente.style.marginLeft = '8px';
+          badgeAgente.textContent = "Agente Ativo";
+          topo.appendChild(badgeAgente);
+        }
+
         const acoes = document.createElement("div");
         acoes.className = "usuario-acoes";
 
@@ -555,6 +784,20 @@
         botaoDesativar.textContent = "Desativar";
         botaoDesativar.addEventListener("click", () => desativarUsuario(vendedor.login));
 
+        const botaoAgente = document.createElement("button");
+        botaoAgente.type = "button";
+        botaoAgente.className = "mini-btn";
+        botaoAgente.textContent = vendedor.agente ? "Remover Agente" : "Conceder Agente";
+        botaoAgente.addEventListener("click", () => {
+          const novoEstado = !Boolean(vendedor.agente);
+          const resultado = AuthDB.definirAgente(vendedor.login, novoEstado, sessao.login);
+          if (resultado.ok) {
+            atualizarListaVendedores();
+          } else {
+            setStatus(resultado.mensagem, "error");
+          }
+        });
+
         const botaoExcluir = document.createElement("button");
         botaoExcluir.type = "button";
         botaoExcluir.className = "mini-btn danger";
@@ -564,6 +807,7 @@
         acoes.appendChild(botao30);
         acoes.appendChild(botao90);
         acoes.appendChild(botaoDesativar);
+        acoes.appendChild(botaoAgente);
         acoes.appendChild(botaoExcluir);
 
         card.appendChild(topo);

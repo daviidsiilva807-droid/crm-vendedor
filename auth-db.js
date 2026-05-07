@@ -58,6 +58,7 @@
       login: normalizarLogin(usuario?.login),
       senha: String(usuario?.senha || ""),
       papel: usuario?.papel || "vendedor",
+      agente: Boolean(usuario?.agente),
       ativo: Boolean(usuario?.ativo),
       vitalicio: Boolean(usuario?.vitalicio),
       planoDias: Number(usuario?.planoDias) || plano.dias,
@@ -172,6 +173,7 @@
       login: ADMIN_LOGIN,
       senha: ADMIN_SENHA,
       papel: "admin",
+      agente: true,
       ativo: true,
       vitalicio: true,
       planoDias: null,
@@ -207,6 +209,7 @@
       token: gerarToken(),
       login: usuario.login,
       papel: usuario.papel,
+      agente: Boolean(usuario.agente),
       vitalicio: Boolean(usuario.vitalicio),
       planoDias: usuario.vitalicio ? null : (usuario.planoDias || 30),
       planoValor: usuario.vitalicio ? null : (usuario.planoValor || 20),
@@ -299,6 +302,12 @@
   }
 
   function criarUsuarioVendedor(login, senha, criadoPor) {
+    // backward-compatible: if criadoPor provided as object with agente flag
+    let agenteFlag = false;
+    if (typeof criadoPor === 'object' && criadoPor !== null) {
+      agenteFlag = Boolean(criadoPor.agente);
+      criadoPor = criadoPor.criadoPor || null;
+    }
     const sessao = exigirSessaoAdmin();
     if (!sessao) {
       return { ok: false, mensagem: "Acesso permitido apenas para administrador." };
@@ -322,6 +331,7 @@
       login: loginNormalizado,
       senha: senhaNormalizada,
       papel: "vendedor",
+      agente: agenteFlag || false,
       ativo: false,
       vitalicio: false,
       planoDias: 30,
@@ -406,6 +416,34 @@
     return { ok: true, mensagem: "Usuario desativado com sucesso." };
   }
 
+  function definirAgente(login, habilitar, ativadoPor) {
+    const sessao = exigirSessaoAdmin();
+    if (!sessao) {
+      return { ok: false, mensagem: "Acesso permitido apenas para administrador." };
+    }
+
+    const loginNormalizado = normalizarLogin(login);
+    if (loginNormalizado === ADMIN_LOGIN) {
+      return { ok: false, mensagem: "O usuario administrador ja possui acesso total ao agente." };
+    }
+
+    const usuarios = sincronizarVencimentos();
+    const index = usuarios.findIndex((u) => u.login === loginNormalizado);
+    if (index < 0) {
+      return { ok: false, mensagem: "Usuario nao encontrado." };
+    }
+
+    usuarios[index] = {
+      ...usuarios[index],
+      agente: Boolean(habilitar),
+      agenteAtivadoEm: habilitar ? new Date().toISOString() : usuarios[index].agenteAtivadoEm || null,
+      agenteAtivadoPor: habilitar ? (ativadoPor || sessao.login) : usuarios[index].agenteAtivadoPor || null
+    };
+
+    salvarUsuarios(usuarios);
+    return { ok: true, mensagem: habilitar ? 'Agente ativado para o usuario.' : 'Agente desativado para o usuario.' };
+  }
+
   function excluirUsuario(login, excluidoPor) {
     const sessao = exigirSessaoAdmin();
     if (!sessao) {
@@ -453,6 +491,7 @@
     obterUsuario,
     obterStatusUsuario,
     ativarUsuario,
+    definirAgente,
     desativarUsuario,
     excluirUsuario,
     sair,
