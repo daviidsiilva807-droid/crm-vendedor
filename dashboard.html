@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src 'self' https://api.openai.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#0f766e">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -212,6 +212,42 @@
       font-size: 14px;
     }
 
+    .marketing-ai {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      display: none;
+    }
+
+    .marketing-ai-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .marketing-ai-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #0f172a;
+    }
+
+    .marketing-ai-note {
+      font-size: 12px;
+      color: #475569;
+    }
+
+    .marketing-ai-grid {
+      margin-top: 0;
+    }
+
     .marketing-grid {
       margin-top: 12px;
       display: grid;
@@ -402,9 +438,41 @@
 
     @media (max-width: 700px) {
       body { padding: 10px; }
+
+      .page {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        order: 1;
+      }
+
+      .marketing-card {
+        order: 2;
+      }
+
+      .cards {
+        order: 3;
+      }
+
+      .admin-card {
+        order: 4;
+      }
+
+      .logout {
+        order: 5;
+      }
     }
   </style>
   <script src="transitions.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw-notifications.js').then((registration) => {
+        registration.update().catch(() => {});
+      }).catch(() => {});
+    }
+  </script>
 </head>
 <body>
   <div class="page">
@@ -446,6 +514,27 @@
     <section class="marketing-card">
       <h2>&#129302; Agente de Marketing</h2>
       <p>Crie posts, legendas, descricoes, CTA, hashtags e sugestao de dias e horas de postagem para vender mais.</p>
+
+      <div id="marketingAiConfig" class="marketing-ai">
+        <div class="marketing-ai-header">
+          <label class="marketing-ai-label" for="marketingUsarChatGPT">
+            <input id="marketingUsarChatGPT" type="checkbox">
+            Usar ChatGPT na geração
+          </label>
+          <span class="marketing-ai-note">Opcional. A chave fica salva apenas neste navegador.</span>
+        </div>
+
+        <div class="marketing-grid marketing-ai-grid">
+          <div class="marketing-field">
+            <label for="marketingApiKey">OpenAI API key</label>
+            <input id="marketingApiKey" type="password" placeholder="sk-...">
+          </div>
+          <div class="marketing-field">
+            <label for="marketingModeloIA">Modelo</label>
+            <input id="marketingModeloIA" type="text" placeholder="gpt-4.1-mini">
+          </div>
+        </div>
+      </div>
 
       <div class="marketing-grid">
         <div class="marketing-field">
@@ -603,11 +692,13 @@
 
       document.getElementById("nomeVendedor").textContent = `Vendedor: ${sessao.login}`;
       ehAdmin = sessao.papel === "admin" && sessao.login.toLowerCase() === "daviidsiilva807";
+      window.CONTROLE_SECAO_ADMIN = ehAdmin;
 
       atualizarBannerAssinatura();
 
       if (ehAdmin) {
         document.getElementById("adminCard").style.display = "block";
+        document.getElementById("marketingAiConfig").style.display = "block";
         atualizarListaVendedores();
       }
     }

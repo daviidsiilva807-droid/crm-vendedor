@@ -18,3 +18,9 @@ Como publicar no GitHub Pages:
 
 Observacao:
 - os dados salvos (usuarios, sessoes e rascunhos) ficam apenas no navegador/dispositivo de cada usuario.
+
+Agente de marketing com ChatGPT:
+- no dashboard, ative "Usar ChatGPT na geração"
+- informe sua OpenAI API key e o modelo desejado
+- a chave fica salva apenas no navegador local
+- se a integração falhar, o gerador local continua funcionando como fallback

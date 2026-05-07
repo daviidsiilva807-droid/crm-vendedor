@@ -1,5 +1,6 @@
 (function () {
   const STORAGE_KEY = 'controleSecao_marketing_draft_v1';
+  const AI_CONFIG_STORAGE_KEY = 'controleSecao_marketing_ai_v1';
 
   function $(id) {
     return document.getElementById(id);
@@ -114,6 +115,243 @@
     return mapa[objetivo] || 'vender mais';
   }
 
+  function obterConfiguracaoIA() {
+    if (!window.CONTROLE_SECAO_ADMIN) {
+      return {
+        enabled: false,
+        apiKey: '',
+        model: 'gpt-4.1-mini'
+      };
+    }
+
+    const padrao = {
+      enabled: false,
+      apiKey: '',
+      model: 'gpt-4.1-mini'
+    };
+
+    try {
+      const bruto = localStorage.getItem(AI_CONFIG_STORAGE_KEY);
+      if (!bruto) {
+        return padrao;
+      }
+
+      const dados = JSON.parse(bruto);
+      if (!dados || typeof dados !== 'object') {
+        return padrao;
+      }
+
+      return {
+        enabled: Boolean(dados.enabled),
+        apiKey: String(dados.apiKey || '').trim(),
+        model: String(dados.model || padrao.model).trim() || padrao.model
+      };
+    } catch (erro) {
+      return padrao;
+    }
+  }
+
+  function salvarConfiguracaoIA() {
+    if (!window.CONTROLE_SECAO_ADMIN) {
+      return;
+    }
+
+    try {
+      const dados = {
+        enabled: $('marketingUsarChatGPT')?.checked === true,
+        apiKey: $('marketingApiKey')?.value.trim() || '',
+        model: $('marketingModeloIA')?.value.trim() || 'gpt-4.1-mini',
+        atualizadoEm: new Date().toISOString()
+      };
+
+      localStorage.setItem(AI_CONFIG_STORAGE_KEY, JSON.stringify(dados));
+    } catch (erro) {
+      // Configuração opcional.
+    }
+  }
+
+  function carregarConfiguracaoIA() {
+    if (!window.CONTROLE_SECAO_ADMIN) {
+      if ($('marketingAiConfig')) {
+        $('marketingAiConfig').style.display = 'none';
+      }
+
+      if ($('marketingUsarChatGPT')) $('marketingUsarChatGPT').checked = false;
+      if ($('marketingApiKey')) $('marketingApiKey').value = '';
+      if ($('marketingModeloIA')) $('marketingModeloIA').value = 'gpt-4.1-mini';
+      return;
+    }
+
+    const dados = obterConfiguracaoIA();
+
+    if ($('marketingUsarChatGPT')) $('marketingUsarChatGPT').checked = Boolean(dados.enabled);
+    if ($('marketingApiKey')) $('marketingApiKey').value = dados.apiKey || '';
+    if ($('marketingModeloIA')) $('marketingModeloIA').value = dados.model || 'gpt-4.1-mini';
+  }
+
+  function configurarIAListeners() {
+    if (!window.CONTROLE_SECAO_ADMIN) {
+      return;
+    }
+
+    ['marketingUsarChatGPT', 'marketingApiKey', 'marketingModeloIA']
+      .forEach((id) => {
+        const campo = $(id);
+        if (!campo) {
+          return;
+        }
+
+        campo.addEventListener('input', salvarConfiguracaoIA);
+        campo.addEventListener('change', salvarConfiguracaoIA);
+        campo.addEventListener('blur', salvarConfiguracaoIA);
+      });
+  }
+
+  function montarPromptChatGPT(dados) {
+    return [
+      'Você é um assistente de marketing para uma loja de roupas, tênis e acessórios no Brasil.',
+      'Responda somente com um JSON válido e sem blocos de código.',
+      'A estrutura deve ter exatamente as chaves postPrincipal, legenda e agenda.',
+      'Cada valor deve ser uma string em português do Brasil, clara, comercial e pronta para uso.',
+      'Use um tom alinhado aos campos informados e não invente dados ausentes.',
+      '',
+      'Dados da campanha:',
+      JSON.stringify(dados, null, 2)
+    ].join('\n');
+  }
+
+  function extrairTextoRespostaOpenAI(resposta) {
+    if (!resposta) {
+      return '';
+    }
+
+    if (typeof resposta.output_text === 'string' && resposta.output_text.trim()) {
+      return resposta.output_text.trim();
+    }
+
+    if (typeof resposta.choices?.[0]?.message?.content === 'string') {
+      return resposta.choices[0].message.content.trim();
+    }
+
+    if (Array.isArray(resposta.output)) {
+      const trechos = [];
+
+      resposta.output.forEach((item) => {
+        if (Array.isArray(item?.content)) {
+          item.content.forEach((bloco) => {
+            if (typeof bloco?.text === 'string') {
+              trechos.push(bloco.text);
+            }
+          });
+        }
+      });
+
+      return trechos.join('\n').trim();
+    }
+
+    return '';
+  }
+
+  function extrairJsonDoTexto(texto) {
+    if (!texto) {
+      return null;
+    }
+
+    const bruto = String(texto).trim();
+
+    try {
+      return JSON.parse(bruto);
+    } catch (erro) {
+      const inicio = bruto.indexOf('{');
+      const fim = bruto.lastIndexOf('}');
+
+      if (inicio >= 0 && fim > inicio) {
+        try {
+          return JSON.parse(bruto.slice(inicio, fim + 1));
+        } catch (erroInterno) {
+          return null;
+        }
+      }
+
+      return null;
+    }
+  }
+
+  function normalizarResultadoIA(resultado) {
+    if (!resultado || typeof resultado !== 'object') {
+      return null;
+    }
+
+    const postPrincipal = String(resultado.postPrincipal || resultado.post || '').trim();
+    const legenda = String(resultado.legenda || resultado.caption || '').trim();
+    const agenda = String(resultado.agenda || resultado.calendario || '').trim();
+
+    if (!postPrincipal && !legenda && !agenda) {
+      return null;
+    }
+
+    return {
+      postPrincipal: postPrincipal || 'Sem resposta principal.',
+      legenda: legenda || 'Sem legenda.',
+      agenda: agenda || 'Sem agenda.'
+    };
+  }
+
+  async function gerarConteudoComChatGPT(dados) {
+    const configuracao = obterConfiguracaoIA();
+
+    if (!configuracao.enabled) {
+      return null;
+    }
+
+    if (!configuracao.apiKey) {
+      throw new Error('Informe a chave da OpenAI para usar o ChatGPT.');
+    }
+
+    const resposta = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${configuracao.apiKey}`
+      },
+      body: JSON.stringify({
+        model: configuracao.model || 'gpt-4.1-mini',
+        temperature: 0.7,
+        messages: [
+          {
+            role: 'system',
+            content: 'Responda somente com JSON válido contendo as chaves postPrincipal, legenda e agenda.'
+          },
+          {
+            role: 'user',
+            content: montarPromptChatGPT(dados)
+          }
+        ]
+      })
+    });
+
+    let payload = null;
+    try {
+      payload = await resposta.json();
+    } catch (erro) {
+      throw new Error('Nao foi possivel ler a resposta do ChatGPT.');
+    }
+
+    if (!resposta.ok) {
+      const mensagem = payload?.error?.message || `Falha ao gerar conteúdo (${resposta.status}).`;
+      throw new Error(mensagem);
+    }
+
+    const texto = extrairTextoRespostaOpenAI(payload);
+    const resultado = normalizarResultadoIA(extrairJsonDoTexto(texto));
+
+    if (!resultado) {
+      throw new Error('ChatGPT respondeu, mas o formato veio invalido.');
+    }
+
+    return resultado;
+  }
+
   function gerarConteudo(dados) {
     const nomeProduto = capitalizarTexto(dados.produto);
     const dias = sugestaoDiasPorObjetivo(dados.objetivo);
@@ -223,7 +461,7 @@
     if (agenda) agenda.textContent = resultado.agenda;
   }
 
-  function gerarConteudoMarketing() {
+  async function gerarConteudoMarketing() {
     const dados = {
       produto: lerValor('marketingProduto'),
       categoria: $('marketingCategoria')?.value || 'tenis',
@@ -241,9 +479,44 @@
       return;
     }
 
+    if (!window.CONTROLE_SECAO_ADMIN) {
+      const resultado = gerarConteudo(dados);
+      aplicarResultado(resultado);
+      salvarDraft();
+      mostrarStatus('ChatGPT disponível apenas para o administrador. Conteúdo local gerado.', 'error');
+      return;
+    }
+
+    salvarDraft();
+
+    const configuracaoIA = obterConfiguracaoIA();
+
+    if (configuracaoIA.enabled) {
+      if (!configuracaoIA.apiKey) {
+        const resultadoLocalSemChave = gerarConteudo(dados);
+        aplicarResultado(resultadoLocalSemChave);
+        mostrarStatus('ChatGPT está ativado, mas falta a chave da OpenAI. Conteúdo local gerado.', 'error');
+        return;
+      }
+
+      mostrarStatus('Gerando com ChatGPT...', '');
+
+      try {
+        const resultadoChatGPT = await gerarConteudoComChatGPT(dados);
+        aplicarResultado(resultadoChatGPT);
+        mostrarStatus('Conteúdo gerado com ChatGPT.', 'ok');
+        return;
+      } catch (erro) {
+        console.error('Erro ao gerar com ChatGPT:', erro);
+        const resultadoLocal = gerarConteudo(dados);
+        aplicarResultado(resultadoLocal);
+        mostrarStatus(`ChatGPT indisponível. Conteúdo local gerado. ${erro.message || ''}`.trim(), 'error');
+        return;
+      }
+    }
+
     const resultado = gerarConteudo(dados);
     aplicarResultado(resultado);
-    salvarDraft();
     mostrarStatus('Conteúdo de marketing gerado com sucesso.', 'ok');
   }
 
@@ -297,7 +570,9 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+      carregarConfiguracaoIA();
       carregarDraft();
+      configurarIAListeners();
       configurarAutoSave();
       if (!$('marketingProduto')?.value) {
         preencherMarketingPadrao();
@@ -317,7 +592,9 @@
       }
     });
   } else {
+    carregarConfiguracaoIA();
     carregarDraft();
+    configurarIAListeners();
     configurarAutoSave();
     if (!$('marketingProduto')?.value) {
       preencherMarketingPadrao();
