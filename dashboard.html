@@ -173,6 +173,188 @@
       gap: 12px;
     }
 
+    .calendar-card {
+      margin-top: 12px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    .calendar-header {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .calendar-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .calendar-header p {
+      margin: 8px 0 0;
+      color: #4b5563;
+      font-size: 14px;
+    }
+
+    .calendar-summary {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 13px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .calendar-controls {
+      margin-top: 12px;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      align-items: end;
+    }
+
+    .calendar-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .calendar-field label {
+      font-size: 13px;
+      font-weight: bold;
+      color: #334155;
+    }
+
+    .calendar-field input,
+    .calendar-field select {
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #0f172a;
+      background: #fff;
+    }
+
+    .calendar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .calendar-legend {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #475569;
+    }
+
+    .calendar-grid {
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .calendar-weekday,
+    .calendar-day {
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+    }
+
+    .calendar-weekday {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #475569;
+      background: #f8fafc;
+    }
+
+    .calendar-day {
+      min-height: 72px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      color: #0f172a;
+    }
+
+    .calendar-day:hover {
+      transform: translateY(-2px);
+      border-color: #0f766e;
+      box-shadow: 0 8px 20px rgba(15, 118, 110, 0.12);
+    }
+
+    .calendar-day.is-empty {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .calendar-day.is-off {
+      background: linear-gradient(135deg, #ecfdf5, #dcfce7);
+      border-color: #86efac;
+    }
+
+    .calendar-day.is-today {
+      border-color: #0f766e;
+      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.14);
+    }
+
+    .calendar-day-number {
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    .calendar-day-note {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .calendar-day.is-off .calendar-day-note {
+      color: #166534;
+    }
+
+    .calendar-list {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .calendar-chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .calendar-empty {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      color: #475569;
+      font-size: 13px;
+    }
+
     .card {
       background: #fff;
       border: 1px solid #e5e7eb;
@@ -511,6 +693,38 @@
       </section>
     </div>
 
+    <section class="calendar-card">
+      <div class="calendar-header">
+        <div>
+          <h2>&#128197; Calendario de Trabalho</h2>
+          <p>Marque as folgas do mes e acompanhe o planejamento de forma simples.</p>
+        </div>
+        <div id="resumoFolgas" class="calendar-summary">0 folgas marcadas</div>
+      </div>
+
+      <div class="calendar-controls">
+        <div class="calendar-field">
+          <label for="calendarioMes">Mes</label>
+          <select id="calendarioMes"></select>
+        </div>
+        <div class="calendar-field">
+          <label for="calendarioAno">Ano</label>
+          <input id="calendarioAno" type="number" min="2020" max="2100">
+        </div>
+        <div class="calendar-actions">
+          <button class="mini-btn primary" type="button" id="btnMesAnterior">Mes anterior</button>
+          <button class="mini-btn primary" type="button" id="btnMesAtual">Mes atual</button>
+          <button class="mini-btn primary" type="button" id="btnProximoMes">Proximo mes</button>
+          <button class="mini-btn" type="button" id="btnLimparFolgas">Limpar folgas</button>
+        </div>
+      </div>
+
+      <div id="calendarioLegenda" class="calendar-legend">Clique nos dias para marcar ou desmarcar as folgas do mes.</div>
+      <div id="gradeCalendario" class="calendar-grid"></div>
+      <div id="listaFolgas" class="calendar-list"></div>
+      <div class="calendar-empty">Os dados ficam salvos apenas para o seu usuario neste navegador.</div>
+    </section>
+
     <section class="card">
       <h2>&#129302; Agente de Marketing</h2>
       <p>Acesse a página dedicada do agente para gerar conteúdo com ChatGPT ou com o gerador local. O acesso completo é exclusivo do administrador.</p>
@@ -561,6 +775,26 @@
   <script>
     const sessao = AuthDB.exigirLogin();
     let ehAdmin = false;
+    const mesesCalendario = [
+      "Janeiro",
+      "Fevereiro",
+      "Marco",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro"
+    ];
+    const diasSemanaCalendario = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+    const dataAtual = new Date();
+    const estadoCalendario = {
+      ano: dataAtual.getFullYear(),
+      mes: dataAtual.getMonth()
+    };
 
     function formatarMoeda(valor) {
       return Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -591,12 +825,231 @@
       window.CONTROLE_SECAO_ADMIN = ehAdmin;
 
       atualizarBannerAssinatura();
+      inicializarCalendarioFolgas();
 
       if (ehAdmin) {
         document.getElementById("adminCard").style.display = "block";
-        document.getElementById("marketingAiConfig").style.display = "block";
+        const marketingAiConfig = document.getElementById("marketingAiConfig");
+        if (marketingAiConfig) {
+          marketingAiConfig.style.display = "block";
+        }
         atualizarListaVendedores();
       }
+    }
+
+    function chaveFolgas(ano, mes) {
+      const mesFormatado = String(mes + 1).padStart(2, "0");
+      return `controleSecao_folgas_v1_${sessao.login}_${ano}-${mesFormatado}`;
+    }
+
+    function lerFolgas(ano, mes) {
+      const bruto = localStorage.getItem(chaveFolgas(ano, mes));
+
+      if (!bruto) {
+        return [];
+      }
+
+      try {
+        const dados = JSON.parse(bruto);
+        if (!Array.isArray(dados)) {
+          return [];
+        }
+
+        return dados
+          .map((valor) => Number(valor))
+          .filter((valor) => Number.isInteger(valor) && valor >= 1 && valor <= 31)
+          .sort((a, b) => a - b);
+      } catch {
+        return [];
+      }
+    }
+
+    function salvarFolgas(ano, mes, folgas) {
+      const unicas = [...new Set(folgas)]
+        .map((valor) => Number(valor))
+        .filter((valor) => Number.isInteger(valor) && valor >= 1 && valor <= 31)
+        .sort((a, b) => a - b);
+
+      localStorage.setItem(chaveFolgas(ano, mes), JSON.stringify(unicas));
+    }
+
+    function atualizarResumoFolgas(folgas, totalDias, ano, mes) {
+      const resumo = document.getElementById("resumoFolgas");
+      const listaFolgas = document.getElementById("listaFolgas");
+      const nomeMes = mesesCalendario[mes] || "";
+
+      resumo.textContent = `${folgas.length} folga${folgas.length === 1 ? "" : "s"} marcada${folgas.length === 1 ? "" : "s"}`;
+      document.getElementById("calendarioLegenda").textContent = `Calendario de ${nomeMes} de ${ano}. ${totalDias} dia(s) no mes.`;
+
+      listaFolgas.innerHTML = "";
+
+      if (folgas.length === 0) {
+        const vazio = document.createElement("div");
+        vazio.className = "calendar-empty";
+        vazio.textContent = "Nenhuma folga marcada neste mes.";
+        listaFolgas.appendChild(vazio);
+        return;
+      }
+
+      folgas.forEach((dia) => {
+        const chip = document.createElement("span");
+        chip.className = "calendar-chip";
+        chip.textContent = `Dia ${String(dia).padStart(2, "0")}`;
+        listaFolgas.appendChild(chip);
+      });
+    }
+
+    function alternarFolga(dia) {
+      const folgas = lerFolgas(estadoCalendario.ano, estadoCalendario.mes);
+      const indice = folgas.indexOf(dia);
+
+      if (indice >= 0) {
+        folgas.splice(indice, 1);
+      } else {
+        folgas.push(dia);
+      }
+
+      salvarFolgas(estadoCalendario.ano, estadoCalendario.mes, folgas);
+      renderizarCalendarioFolgas();
+    }
+
+    function renderizarCalendarioFolgas() {
+      const grade = document.getElementById("gradeCalendario");
+      const ano = estadoCalendario.ano;
+      const mes = estadoCalendario.mes;
+      const totalDias = new Date(ano, mes + 1, 0).getDate();
+      const primeiroDia = new Date(ano, mes, 1).getDay();
+      const folgas = lerFolgas(ano, mes);
+      const dataHoje = new Date();
+
+      grade.innerHTML = "";
+
+      diasSemanaCalendario.forEach((diaSemana) => {
+        const cabecalho = document.createElement("div");
+        cabecalho.className = "calendar-weekday";
+        cabecalho.textContent = diaSemana;
+        grade.appendChild(cabecalho);
+      });
+
+      const totalCelulas = Math.ceil((primeiroDia + totalDias) / 7) * 7;
+
+      for (let indice = 0; indice < totalCelulas; indice += 1) {
+        const dia = indice - primeiroDia + 1;
+
+        if (dia < 1 || dia > totalDias) {
+          const vazio = document.createElement("div");
+          vazio.className = "calendar-day is-empty";
+          grade.appendChild(vazio);
+          continue;
+        }
+
+        const botao = document.createElement("button");
+        const ehFolga = folgas.includes(dia);
+        const ehHoje = dataHoje.getFullYear() === ano && dataHoje.getMonth() === mes && dataHoje.getDate() === dia;
+
+        botao.type = "button";
+        botao.className = `calendar-day${ehFolga ? " is-off" : ""}${ehHoje ? " is-today" : ""}`;
+        botao.setAttribute("aria-pressed", String(ehFolga));
+        botao.innerHTML = `
+          <span class="calendar-day-number">${dia}</span>
+          <span class="calendar-day-note">${ehFolga ? "Folga" : ehHoje ? "Hoje" : "Toque para marcar"}</span>
+        `;
+        botao.addEventListener("click", () => alternarFolga(dia));
+
+        grade.appendChild(botao);
+      }
+
+      atualizarResumoFolgas(folgas, totalDias, ano, mes);
+    }
+
+    function sincronizarControlesCalendario() {
+      const seletorMes = document.getElementById("calendarioMes");
+      const seletorAno = document.getElementById("calendarioAno");
+
+      if (seletorMes) {
+        seletorMes.value = String(estadoCalendario.mes);
+      }
+
+      if (seletorAno) {
+        seletorAno.value = String(estadoCalendario.ano);
+      }
+    }
+
+    function ajustarMes(delta) {
+      const novoMes = estadoCalendario.mes + delta;
+
+      if (novoMes < 0) {
+        estadoCalendario.mes = 11;
+        estadoCalendario.ano -= 1;
+      } else if (novoMes > 11) {
+        estadoCalendario.mes = 0;
+        estadoCalendario.ano += 1;
+      } else {
+        estadoCalendario.mes = novoMes;
+      }
+
+      sincronizarControlesCalendario();
+      renderizarCalendarioFolgas();
+    }
+
+    function inicializarCalendarioFolgas() {
+      const seletorMes = document.getElementById("calendarioMes");
+      const seletorAno = document.getElementById("calendarioAno");
+      const botaoMesAnterior = document.getElementById("btnMesAnterior");
+      const botaoMesAtual = document.getElementById("btnMesAtual");
+      const botaoProximoMes = document.getElementById("btnProximoMes");
+      const botaoLimparFolgas = document.getElementById("btnLimparFolgas");
+
+      if (!seletorMes || !seletorAno || !botaoMesAnterior || !botaoMesAtual || !botaoProximoMes || !botaoLimparFolgas) {
+        return;
+      }
+
+      if (seletorMes.options.length === 0) {
+        mesesCalendario.forEach((nomeMes, indice) => {
+          const option = document.createElement("option");
+          option.value = String(indice);
+          option.textContent = nomeMes;
+          seletorMes.appendChild(option);
+        });
+      }
+
+      sincronizarControlesCalendario();
+
+      seletorMes.addEventListener("change", () => {
+        estadoCalendario.mes = Number(seletorMes.value);
+        renderizarCalendarioFolgas();
+      });
+
+      seletorAno.addEventListener("change", () => {
+        const ano = Number(seletorAno.value);
+
+        if (Number.isInteger(ano) && ano >= 2020 && ano <= 2100) {
+          estadoCalendario.ano = ano;
+          renderizarCalendarioFolgas();
+          return;
+        }
+
+        sincronizarControlesCalendario();
+      });
+
+      botaoMesAnterior.addEventListener("click", () => ajustarMes(-1));
+      botaoMesAtual.addEventListener("click", () => {
+        estadoCalendario.ano = dataAtual.getFullYear();
+        estadoCalendario.mes = dataAtual.getMonth();
+        sincronizarControlesCalendario();
+        renderizarCalendarioFolgas();
+      });
+      botaoProximoMes.addEventListener("click", () => ajustarMes(1));
+      botaoLimparFolgas.addEventListener("click", () => {
+        if (!confirm(`Limpar todas as folgas de ${mesesCalendario[estadoCalendario.mes]} de ${estadoCalendario.ano}?`)) {
+          return;
+        }
+
+        salvarFolgas(estadoCalendario.ano, estadoCalendario.mes, []);
+        renderizarCalendarioFolgas();
+      });
+
+      renderizarCalendarioFolgas();
     }
 
     function setStatus(mensagem, tipo) {

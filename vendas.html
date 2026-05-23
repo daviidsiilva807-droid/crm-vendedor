@@ -363,7 +363,7 @@
           <div id="objetivoNota" class="inline-note">Meta de objetivo nao fixada.</div>
         </div>
         <div class="field">
-          <label for="diasRestantes">Dias restantes no mes</label>
+          <label for="diasRestantes">Dias trabalhados restantes no mês</label>
           <input id="diasRestantes" type="number" min="1" step="1" value="1">
         </div>
         <div class="field">
@@ -374,10 +374,10 @@
 
       <div class="actions">
         <button class="primary" type="button" onclick="calcularMetas()">Calcular metas</button>
-        <button class="secondary" type="button" onclick="preencherDiasAutomatico()">Atualizar dias automaticamente</button>
+        <button class="secondary" type="button" onclick="preencherDiasAutomatico()">Atualizar dias de trabalho automaticamente</button>
         <button class="secondary" type="button" onclick="alternarObjetivoFixo()">Fixar objetivo</button>
       </div>
-      <p class="hint">Tabela de comissao: 40 mil = 0,50% | 46 mil = 1% | 50 mil = 1,2% | 56 mil = 1,5% | 64 mil = 2% | 72 mil = 2,25% | 80 mil = 2,5% | 88 mil = 2,6% | 96 mil = 2,7% | 104 mil = 2,8% | 112 mil = 2,9%</p>
+      <p class="hint">Tabela de comissao: 40 mil = 0,50% | 46 mil = 1% | 50 mil = 1,2% | 56 mil = 1,5% | 64 mil = 2% | 72 mil = 2,25% | 80 mil = 2,5% | 88 mil = 2,6% | 96 mil = 2,7% | 104 mil = 2,8% | 112 mil = 2,9% | o valor diario considera as folgas marcadas no calendario.</p>
     </div>
 
     <div class="summary-grid">
@@ -725,12 +725,48 @@
         : `<strong>${status.mensagem}</strong>Entre em contato para regularizar o acesso.`;
     }
 
+    function chaveFolgasCalendario(ano, mes) {
+      const mesFormatado = String(mes + 1).padStart(2, "0");
+      return `controleSecao_folgas_v1_${sessao.login}_${ano}-${mesFormatado}`;
+    }
+
+    function lerFolgasCalendario(ano, mes) {
+      const bruto = localStorage.getItem(chaveFolgasCalendario(ano, mes));
+
+      if (!bruto) {
+        return [];
+      }
+
+      try {
+        const dados = JSON.parse(bruto);
+        if (!Array.isArray(dados)) {
+          return [];
+        }
+
+        return dados
+          .map((valor) => Number(valor))
+          .filter((valor) => Number.isInteger(valor) && valor >= 1 && valor <= 31)
+          .sort((a, b) => a - b);
+      } catch {
+        return [];
+      }
+    }
+
     function calcularDiasRestantesMes() {
       const hoje = new Date();
-      const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-      const umDia = 1000 * 60 * 60 * 24;
-      const diferenca = Math.ceil((ultimoDia - hoje) / umDia) + 1;
-      return Math.max(1, diferenca);
+      const ano = hoje.getFullYear();
+      const mes = hoje.getMonth();
+      const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+      const folgas = new Set(lerFolgasCalendario(ano, mes));
+
+      let diasTrabalhados = 0;
+      for (let dia = hoje.getDate(); dia <= ultimoDia; dia += 1) {
+        if (!folgas.has(dia)) {
+          diasTrabalhados += 1;
+        }
+      }
+
+      return Math.max(1, diasTrabalhados);
     }
 
     function preencherDiasAutomatico() {
@@ -1087,16 +1123,11 @@
     inicializarMesFiltro();
     
     // Isto chamará calcularMetas via atualizarVisaoVendas
-    const estadoFormularioCarregado = aplicarEstadoFormulario();
+    aplicarEstadoFormulario();
     atualizarInterfaceObjetivoFixo();
     atualizarBannerPlano();
     atualizarVisaoVendas();
-
-    if (!estadoFormularioCarregado) {
-      preencherDiasAutomatico();
-    } else {
-      calcularMetas();
-    }
+    preencherDiasAutomatico();
   </script>
 </body>
 </html>
