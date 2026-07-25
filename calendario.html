@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Calendario de trabalho</title>
+  <style>
+    .cal-topo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .cal-mes {
+      font-size: 1.05rem;
+      font-weight: 800;
+      min-width: 190px;
+      text-align: center;
+    }
+
+    .cal-semana {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .cal-semana span {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--texto-fraco);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .cal-dia {
+      border: 1px solid var(--borda);
+      border-radius: 10px;
+      background: #fff;
+      min-height: 88px;
+      padding: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+      font-family: inherit;
+      transition: box-shadow 0.15s ease, transform 0.1s ease;
+    }
+
+    .cal-dia:hover { box-shadow: 0 6px 16px rgba(16, 24, 40, 0.1); }
+    .cal-dia:active { transform: scale(0.99); }
+    .cal-dia.fora { background: #fafbfc; opacity: 0.45; cursor: default; }
+    .cal-dia.hoje { border-color: var(--laranja); box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25); }
+    .cal-dia.selecionado { border-color: var(--laranja-escuro); background: var(--laranja-suave); }
+
+    .cal-dia .num { font-size: 13px; font-weight: 800; }
+    .cal-dia .marca {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 999px;
+      color: #fff;
+      align-self: flex-start;
+    }
+
+    .cal-dia .venda {
+      margin-top: auto;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--verde);
+    }
+
+    .cal-dia .nota {
+      font-size: 10.5px;
+      color: var(--texto-fraco);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .legenda-tipos {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      font-size: 12.5px;
+      color: var(--texto-medio);
+    }
+
+    .legenda-tipos i {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .item-agenda {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px dashed #e9ebef;
+      font-size: 13.5px;
+    }
+
+    .item-agenda:last-child { border-bottom: none; }
+
+    @media (max-width: 720px) {
+      .cal-dia { min-height: 68px; padding: 6px; }
+      .cal-dia .marca { font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Calendario de trabalho</h1>
+    <p>Monte sua escala do mes: marque dias de trabalho, folgas, ferias, eventos e faltas. Clique em um dia para editar. As vendas registradas aparecem no proprio calendario.</p>
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom:16px; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr)">
+    <div class="card">
+      <div class="cal-topo">
+        <button class="btn btn-neutro btn-mini" type="button" onclick="mudarMes(-1)">&#8592; Anterior</button>
+        <div id="calMes" class="cal-mes">-</div>
+        <button class="btn btn-neutro btn-mini" type="button" onclick="mudarMes(1)">Proximo &#8594;</button>
+        <button class="btn btn-secundario btn-mini" type="button" onclick="irParaHoje()" style="margin-left:auto">Hoje</button>
+      </div>
+
+      <div class="cal-semana">
+        <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span>
+      </div>
+      <div id="calGrid" class="cal-grid"></div>
+
+      <div class="legenda-tipos" id="legendaTipos"></div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-titulo">
+          <h3>Editar dia</h3>
+          <small id="diaSelecionado">Nenhum dia selecionado</small>
+        </div>
+
+        <div class="campo" style="margin-bottom:12px">
+          <label for="tipoDia">Tipo do dia</label>
+          <select id="tipoDia">
+            <option value="">Sem marcacao</option>
+            <option value="trabalho">Trabalho</option>
+            <option value="folga">Folga</option>
+            <option value="ferias">Ferias</option>
+            <option value="evento">Evento / campanha</option>
+            <option value="falta">Falta / atestado</option>
+          </select>
+        </div>
+
+        <div class="campo" style="margin-bottom:12px">
+          <label for="turnoDia">Turno</label>
+          <select id="turnoDia">
+            <option value="integral">Integral</option>
+            <option value="manha">Manha</option>
+            <option value="tarde">Tarde</option>
+            <option value="noite">Noite</option>
+          </select>
+        </div>
+
+        <div class="campo" style="margin-bottom:12px">
+          <label for="notaDia">Anotacao</label>
+          <input id="notaDia" type="text" maxlength="160" placeholder="Ex: inventario, treinamento, folga trocada">
+        </div>
+
+        <div class="acoes">
+          <button class="btn btn-primario" type="button" onclick="salvarDia()">Salvar dia</button>
+          <button class="btn btn-perigo" type="button" onclick="limparDia()">Remover marcacao</button>
+        </div>
+        <div id="statusDia" class="status"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo"><h3>Resumo do mes</h3></div>
+        <div id="resumoMes"></div>
+
+        <div class="card-titulo" style="margin:18px 0 8px"><h3>Proximos compromissos</h3></div>
+        <div id="proximos"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">
+      <h3>Escala rapida</h3>
+      <small>Aplica um padrao ao mes inteiro exibido</small>
+    </div>
+    <div class="acoes">
+      <button class="btn btn-secundario" type="button" onclick="aplicarEscala('semana')">Marcar segunda a sabado como trabalho</button>
+      <button class="btn btn-secundario" type="button" onclick="aplicarEscala('domingos')">Marcar domingos como folga</button>
+      <button class="btn btn-perigo" type="button" onclick="aplicarEscala('limpar')">Limpar mes exibido</button>
+    </div>
+    <div id="statusEscala" class="status"></div>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="app-shell.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+    let mesExibido = CRM.competenciaAtual();
+    let diaSelecionado = CRM.hojeISO();
+
+    if (sessao) {
+      montarLegenda();
+      renderizar();
+    }
+
+    function montarLegenda() {
+      const legenda = document.getElementById("legendaTipos");
+      legenda.innerHTML = Object.keys(CRM.TIPOS_DIA)
+        .map((chave) => `<span><i style="background:${CRM.TIPOS_DIA[chave].cor}"></i>${CRM.TIPOS_DIA[chave].rotulo}</span>`)
+        .join("");
+    }
+
+    function mudarMes(passo) {
+      const [ano, mes] = mesExibido.split("-").map(Number);
+      const data = new Date(ano, mes - 1 + passo, 1);
+      mesExibido = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
+      renderizar();
+    }
+
+    function irParaHoje() {
+      mesExibido = CRM.competenciaAtual();
+      diaSelecionado = CRM.hojeISO();
+      renderizar();
+    }
+
+    function nomeDoMes(competencia) {
+      const [ano, mes] = competencia.split("-").map(Number);
+      const nome = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      return nome.charAt(0).toUpperCase() + nome.slice(1);
+    }
+
+    function renderizar() {
+      document.getElementById("calMes").textContent = nomeDoMes(mesExibido);
+
+      const [ano, mes] = mesExibido.split("-").map(Number);
+      const primeiroDia = new Date(ano, mes - 1, 1).getDay();
+      const total = CRM.diasNoMes(mesExibido);
+      const agenda = CRM.obterAgenda();
+      const vendasPorDia = CRM.totalPorDia(mesExibido);
+      const hoje = CRM.hojeISO();
+
+      const grid = document.getElementById("calGrid");
+      grid.innerHTML = "";
+
+      for (let i = 0; i < primeiroDia; i += 1) {
+        const vazio = document.createElement("div");
+        vazio.className = "cal-dia fora";
+        grid.appendChild(vazio);
+      }
+
+      for (let dia = 1; dia <= total; dia += 1) {
+        const iso = `${mesExibido}-${String(dia).padStart(2, "0")}`;
+        const info = agenda[iso];
+        const venda = vendasPorDia[iso] || 0;
+
+        const celula = document.createElement("button");
+        celula.type = "button";
+        celula.className = "cal-dia";
+        if (iso === hoje) celula.classList.add("hoje");
+        if (iso === diaSelecionado) celula.classList.add("selecionado");
+
+        const marca = info
+          ? `<span class="marca" style="background:${CRM.TIPOS_DIA[info.tipo].cor}">${CRM.TIPOS_DIA[info.tipo].rotulo}${info.turno && info.turno !== "integral" ? ` - ${info.turno}` : ""}</span>`
+          : "";
+
+        celula.innerHTML = `
+          <span class="num">${dia}</span>
+          ${marca}
+          ${info && info.nota ? `<span class="nota">${info.nota}</span>` : ""}
+          ${venda > 0 ? `<span class="venda">${CRM.moeda(venda)}</span>` : ""}
+        `;
+
+        celula.addEventListener("click", () => selecionarDia(iso));
+        grid.appendChild(celula);
+      }
+
+      preencherFormulario();
+      montarResumo();
+    }
+
+    function selecionarDia(iso) {
+      diaSelecionado = iso;
+      renderizar();
+    }
+
+    function preencherFormulario() {
+      const info = CRM.obterDiaAgenda(diaSelecionado);
+      document.getElementById("diaSelecionado").textContent = CRM.formatarDataBR(diaSelecionado);
+      document.getElementById("tipoDia").value = info ? info.tipo : "";
+      document.getElementById("turnoDia").value = info ? info.turno : "integral";
+      document.getElementById("notaDia").value = info ? info.nota : "";
+    }
+
+    function salvarDia() {
+      const tipo = document.getElementById("tipoDia").value;
+      const status = document.getElementById("statusDia");
+
+      if (!tipo) {
+        CRM.salvarDiaAgenda(diaSelecionado, null);
+        status.textContent = "Marcacao removida do dia.";
+      } else {
+        CRM.salvarDiaAgenda(diaSelecionado, {
+          tipo,
+          turno: document.getElementById("turnoDia").value,
+          nota: document.getElementById("notaDia").value
+        });
+        status.textContent = `Dia ${CRM.formatarDataBR(diaSelecionado)} salvo.`;
+      }
+
+      status.className = "status ok";
+      renderizar();
+    }
+
+    function limparDia() {
+      CRM.salvarDiaAgenda(diaSelecionado, null);
+      const status = document.getElementById("statusDia");
+      status.textContent = "Marcacao removida do dia.";
+      status.className = "status ok";
+      renderizar();
+    }
+
+    function aplicarEscala(modo) {
+      const total = CRM.diasNoMes(mesExibido);
+      const status = document.getElementById("statusEscala");
+
+      if (modo === "limpar" && !confirm(`Remover todas as marcacoes de ${nomeDoMes(mesExibido)}?`)) {
+        return;
+      }
+
+      for (let dia = 1; dia <= total; dia += 1) {
+        const iso = `${mesExibido}-${String(dia).padStart(2, "0")}`;
+        const diaSemana = CRM.deISO(iso).getDay();
+
+        if (modo === "limpar") {
+          CRM.salvarDiaAgenda(iso, null);
+        } else if (modo === "semana" && diaSemana >= 1 && diaSemana <= 6) {
+          CRM.salvarDiaAgenda(iso, { tipo: "trabalho", turno: "integral", nota: "" });
+        } else if (modo === "domingos" && diaSemana === 0) {
+          CRM.salvarDiaAgenda(iso, { tipo: "folga", turno: "integral", nota: "" });
+        }
+      }
+
+      status.textContent = modo === "limpar"
+        ? "Mes limpo."
+        : "Escala aplicada. Ajuste os dias que precisarem de excecao.";
+      status.className = "status ok";
+      renderizar();
+    }
+
+    function montarResumo() {
+      const dados = CRM.resumoAgenda(mesExibido);
+      const caixa = document.getElementById("resumoMes");
+      caixa.innerHTML = Object.keys(CRM.TIPOS_DIA)
+        .map((chave) => `
+          <div class="item-agenda">
+            <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${CRM.TIPOS_DIA[chave].cor};margin-right:8px"></i>${CRM.TIPOS_DIA[chave].rotulo}</span>
+            <strong>${dados.contagem[chave]} dia(s)</strong>
+          </div>
+        `)
+        .join("");
+
+      const proximos = document.getElementById("proximos");
+      if (dados.proximos.length === 0) {
+        proximos.innerHTML = '<div class="vazio" style="padding:14px">Nada marcado para os proximos dias.</div>';
+        return;
+      }
+
+      proximos.innerHTML = dados.proximos
+        .map((item) => `
+          <div class="item-agenda">
+            <span>${CRM.formatarDataBR(item.data)}${item.nota ? ` - ${item.nota}` : ""}</span>
+            <span class="pill" style="background:${CRM.TIPOS_DIA[item.tipo].cor}20;color:${CRM.TIPOS_DIA[item.tipo].cor}">${CRM.TIPOS_DIA[item.tipo].rotulo}</span>
+          </div>
+        `)
+        .join("");
+    }
+  </script>
+</body>
+</html>

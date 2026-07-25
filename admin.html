@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Painel do administrador</title>
+  <style>
+    .usuario-card {
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-sm);
+      padding: 14px;
+      background: #fff;
+      margin-bottom: 10px;
+    }
+
+    .usuario-topo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .usuario-nome { font-weight: 800; font-size: 15px; }
+
+    .usuario-detalhes {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--texto-medio);
+      line-height: 1.55;
+    }
+
+    .usuario-credenciais {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--laranja-suave);
+      border: 1px solid var(--laranja-borda);
+      font-size: 12.5px;
+      color: var(--laranja-forte);
+      word-break: break-word;
+    }
+
+    .usuario-acoes {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Painel do administrador</h1>
+    <p>Cadastro de vendedores, controle de assinatura e acesso ao sistema. Area restrita ao administrador.</p>
+  </div>
+
+  <div id="avisoAcesso" class="aviso erro" style="margin-bottom:16px"></div>
+
+  <div id="areaAdmin" style="display:none">
+    <section class="grid grid-kpi" style="margin-bottom:16px">
+      <article class="kpi">
+        <div class="kpi-label">Vendedores cadastrados</div>
+        <div id="kpiTotal" class="kpi-valor">0</div>
+        <div class="kpi-nota">Total de logins criados</div>
+      </article>
+      <article class="kpi verde">
+        <div class="kpi-label">Assinaturas ativas</div>
+        <div id="kpiAtivos" class="kpi-valor">0</div>
+        <div class="kpi-nota">Com acesso liberado hoje</div>
+      </article>
+      <article class="kpi cinza">
+        <div class="kpi-label">Vencidos / desativados</div>
+        <div id="kpiInativos" class="kpi-valor">0</div>
+        <div class="kpi-nota">Precisam de renovacao</div>
+      </article>
+      <article class="kpi azul">
+        <div class="kpi-label">Vencendo em 7 dias</div>
+        <div id="kpiVencendo" class="kpi-valor">0</div>
+        <div class="kpi-nota">Cobrar renovacao</div>
+      </article>
+    </section>
+
+    <div class="grid grid-2" style="margin-bottom:16px; grid-template-columns: minmax(280px, 1fr) minmax(0, 1.4fr)">
+      <div class="card">
+        <div class="card-titulo">
+          <h3>Cadastrar vendedor</h3>
+          <small>Cria login e senha de acesso</small>
+        </div>
+
+        <div class="campo" style="margin-bottom:12px">
+          <label for="novoLogin">Novo login</label>
+          <input id="novoLogin" type="text" placeholder="Ex: maria.silva" autocomplete="off">
+        </div>
+        <div class="campo" style="margin-bottom:12px">
+          <label for="novaSenha">Senha</label>
+          <input id="novaSenha" type="password" placeholder="Minimo 4 caracteres" autocomplete="new-password">
+        </div>
+
+        <div class="acoes">
+          <button class="btn btn-primario" type="button" onclick="cadastrarVendedor()">Cadastrar</button>
+          <button class="btn btn-neutro" type="button" onclick="atualizarLista()">Atualizar lista</button>
+        </div>
+        <div id="statusAdmin" class="status"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">
+          <h3>Vendedores cadastrados</h3>
+          <small id="contadorLista">0 registro(s)</small>
+        </div>
+        <div id="listaVendedores"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="app-shell.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+    const ehAdmin = Boolean(sessao && sessao.papel === "admin" && String(sessao.login).toLowerCase() === "daviidsiilva807");
+
+    if (sessao) {
+      iniciar();
+    }
+
+    function iniciar() {
+      const aviso = document.getElementById("avisoAcesso");
+
+      if (!ehAdmin) {
+        aviso.textContent = "Area restrita. Apenas o usuario administrador pode gerenciar vendedores.";
+        return;
+      }
+
+      aviso.style.display = "none";
+      document.getElementById("areaAdmin").style.display = "block";
+      atualizarLista();
+    }
+
+    function setStatus(mensagem, tipo) {
+      const status = document.getElementById("statusAdmin");
+      status.textContent = mensagem;
+      status.className = `status ${tipo}`;
+    }
+
+    function cadastrarVendedor() {
+      const login = document.getElementById("novoLogin").value.trim();
+      const senha = document.getElementById("novaSenha").value;
+      const resultado = AuthDB.criarUsuarioVendedor(login, senha, sessao.login);
+
+      if (!resultado.ok) {
+        setStatus(resultado.mensagem, "error");
+        return;
+      }
+
+      document.getElementById("novoLogin").value = "";
+      document.getElementById("novaSenha").value = "";
+      setStatus(resultado.mensagem, "ok");
+      atualizarLista();
+    }
+
+    function aplicarPlano(login, dias) {
+      const resultado = AuthDB.ativarUsuario(login, dias, sessao.login);
+      setStatus(resultado.mensagem, resultado.ok ? "ok" : "error");
+      atualizarLista();
+    }
+
+    function desativar(login) {
+      const resultado = AuthDB.desativarUsuario(login, "Desativado manualmente por falta de pagamento.", sessao.login);
+      setStatus(resultado.mensagem, resultado.ok ? "ok" : "error");
+      atualizarLista();
+    }
+
+    function excluir(login) {
+      if (!confirm(`Excluir o vendedor ${login}? O login e a senha serao removidos.`)) {
+        return;
+      }
+
+      const resultado = AuthDB.excluirUsuario(login, sessao.login);
+      setStatus(resultado.mensagem, resultado.ok ? "ok" : "error");
+      atualizarLista();
+    }
+
+    function montarBadge(status) {
+      const badge = document.createElement("span");
+      const tipo = status === "ativo" || status === "vitalicio" ? "ok" : status === "vencido" ? "warn" : "off";
+      badge.className = `badge ${tipo}`;
+      badge.textContent = status === "ativo"
+        ? "Ativo"
+        : status === "vitalicio"
+          ? "Vitalicio"
+          : status === "vencido"
+            ? "Vencido"
+            : "Desativado";
+      return badge;
+    }
+
+    function atualizarLista() {
+      const vendedores = AuthDB.listarVendedores();
+      const lista = document.getElementById("listaVendedores");
+      lista.innerHTML = "";
+
+      document.getElementById("contadorLista").textContent = `${vendedores.length} registro(s)`;
+      document.getElementById("kpiTotal").textContent = vendedores.length;
+
+      let ativos = 0;
+      let inativos = 0;
+      let vencendo = 0;
+
+      if (vendedores.length === 0) {
+        lista.innerHTML = '<div class="vazio">Nenhum vendedor cadastrado ainda.</div>';
+      }
+
+      vendedores.forEach((vendedor) => {
+        const status = AuthDB.obterStatusUsuario(vendedor.login);
+        const ativo = Boolean(status && status.ativo);
+        const vitalicio = Boolean(status && status.vitalicio);
+        const dias = status && !vitalicio ? Number(status.diasRestantes) || 0 : null;
+
+        if (ativo) {
+          ativos += 1;
+        } else {
+          inativos += 1;
+        }
+
+        if (ativo && !vitalicio && dias !== null && dias <= 7) {
+          vencendo += 1;
+        }
+
+        const card = document.createElement("div");
+        card.className = "usuario-card";
+
+        const topo = document.createElement("div");
+        topo.className = "usuario-topo";
+
+        const nome = document.createElement("div");
+        nome.className = "usuario-nome";
+        nome.textContent = vendedor.login;
+
+        topo.appendChild(nome);
+        topo.appendChild(montarBadge(status ? status.status : "desativado"));
+
+        const detalhes = document.createElement("div");
+        detalhes.className = "usuario-detalhes";
+        const plano = vitalicio
+          ? "vitalicio"
+          : `${vendedor.planoDias || 30} dias (${CRM.moeda(vendedor.planoValor || 20)})`;
+        const vencimento = vitalicio
+          ? "sem vencimento"
+          : (status && status.assinaturaFimEm ? CRM.formatarDataBR(String(status.assinaturaFimEm).slice(0, 10)) : "sem assinatura");
+        detalhes.textContent = `Criado por ${vendedor.criadoPor || "-"}. Plano: ${plano}. Restam ${vitalicio ? "vitalicio" : `${dias} dia(s)`}. Vence em ${vencimento}.`;
+
+        const credenciais = document.createElement("div");
+        credenciais.className = "usuario-credenciais";
+        credenciais.textContent = `Login: ${vendedor.login} | Senha: ${vendedor.senha || "-"}`;
+
+        const acoes = document.createElement("div");
+        acoes.className = "usuario-acoes";
+
+        [
+          { texto: "Ativar 30 dias", classe: "btn-primario", acao: () => aplicarPlano(vendedor.login, 30) },
+          { texto: "Ativar 90 dias", classe: "btn-secundario", acao: () => aplicarPlano(vendedor.login, 90) },
+          { texto: "Desativar", classe: "btn-neutro", acao: () => desativar(vendedor.login) },
+          { texto: "Excluir", classe: "btn-perigo", acao: () => excluir(vendedor.login) }
+        ].forEach((config) => {
+          const botao = document.createElement("button");
+          botao.type = "button";
+          botao.className = `btn btn-mini ${config.classe}`;
+          botao.textContent = config.texto;
+          botao.addEventListener("click", config.acao);
+          acoes.appendChild(botao);
+        });
+
+        card.appendChild(topo);
+        card.appendChild(detalhes);
+        card.appendChild(credenciais);
+        card.appendChild(acoes);
+        lista.appendChild(card);
+      });
+
+      document.getElementById("kpiAtivos").textContent = ativos;
+      document.getElementById("kpiInativos").textContent = inativos;
+      document.getElementById("kpiVencendo").textContent = vencendo;
+    }
+  </script>
+</body>
+</html>

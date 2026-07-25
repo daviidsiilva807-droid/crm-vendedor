@@ -4,3 +4,8 @@ node_modules/
 .DS_Store
 *.log
 
+# Base local do backend opcional de login (contem senhas)
+data/state.json
+
+# Configuracao local do Claude Code
+.claude/

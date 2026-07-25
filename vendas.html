@@ -5,1129 +5,655 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#0f766e">
+  <meta name="theme-color" content="#f97316">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Controle">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="img/icon-192.png">
-  <title>Metas de Vendas</title>
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Vendas e Metas</title>
   <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.28)), url("img/logoadidas.png") center / cover fixed no-repeat;
-      color: #1f2937;
-      padding: 14px;
-    }
-
-    .page {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    .header {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 14px;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(1.4rem, 5vw, 2rem);
-    }
-
-    .subtitle {
-      margin-top: 8px;
-      color: #4b5563;
-      font-size: 14px;
-    }
-
-    .plan-banner {
-      margin-top: 12px;
-      border-radius: 12px;
-      padding: 12px 14px;
-      background: linear-gradient(135deg, #fef3c7, #fff7ed);
-      border: 1px solid #fdba74;
-      color: #7c2d12;
-      line-height: 1.45;
-    }
-
-    .plan-banner strong {
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .inline-note {
-      margin-top: 6px;
-      font-size: 13px;
-      color: #4b5563;
-    }
-
-    .form-grid {
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      margin-top: 14px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .field label {
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    .field input {
-      min-height: 42px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 15px;
-    }
-
-    .actions {
-      margin-top: 12px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      min-height: 44px;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .primary {
-      background: #0f766e;
-      color: #fff;
-    }
-
-    .secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .summary-grid {
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      margin-bottom: 14px;
-    }
-
-    .back-link {
-      display: inline-flex;
-      min-height: 42px;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 12px;
-      border-radius: 8px;
-      text-decoration: none;
-      background: #1d4ed8;
-      color: #fff;
-      font-weight: bold;
-      margin-bottom: 12px;
-    }
-
-    .summary-card {
+    .meta-box {
+      border: 1px solid var(--borda);
+      border-radius: var(--raio);
+      padding: 16px;
       background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 12px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     }
 
-    .summary-card.highlight {
-      border-color: #0f766e;
-      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.14);
+    .meta-box.destaque {
+      border-color: var(--laranja-borda);
+      background: var(--laranja-suave);
     }
 
-    .summary-card.meta-status {
-      transition: background-color 0.2s ease, border-color 0.2s ease;
-    }
-
-    .summary-card.meta-status.status-empty {
-      background: #f8fafc;
-      border-color: #cbd5e1;
-    }
-
-    .summary-card.meta-status.status-low {
-      background: #fff7ed;
-      border-color: #fdba74;
-    }
-
-    .summary-card.meta-status.status-mid {
-      background: #fefce8;
-      border-color: #facc15;
-    }
-
-    .summary-card.meta-status.status-near {
-      background: #ecfeff;
-      border-color: #67e8f9;
-    }
-
-    .summary-card.meta-status.status-hit {
-      background: #ecfdf5;
-      border-color: #86efac;
-    }
-
-    .summary-label {
-      font-size: 12px;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      margin-bottom: 8px;
-    }
-
-    .summary-value {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: #111827;
-    }
-
-    .summary-note {
-      margin-top: 6px;
-      font-size: 12px;
-      color: #475569;
-    }
-
-    .table-wrap {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .meta-box h4 {
+      margin: 0;
       font-size: 14px;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 10px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-
-    th {
-      background: #f8fafc;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      color: #475569;
-    }
-
-    tr.status-low {
-      background: #fff7ed;
-    }
-
-    tr.status-mid {
-      background: #fefce8;
-    }
-
-    tr.status-near {
-      background: #ecfeff;
-    }
-
-    tr.status-hit {
-      background: #ecfdf5;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .pill.ok { background: #bbf7d0; color: #14532d; }
-    .pill.wait { background: #e2e8f0; color: #334155; }
-
-    .hint {
-      margin-top: 8px;
-      font-size: 13px;
-      color: #4b5563;
-    }
-
-    /* TABS & REGISTRO DE VENDAS */
-    .tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid #cbd5e1;
-      padding-bottom: 2px;
-      overflow-x: auto;
-    }
-    .tab-btn {
-      background: transparent;
-      border: none;
-      border-bottom: 3px solid transparent;
-      padding: 10px 16px;
-      font-size: 15px;
-      color: #64748b;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-    }
-    .tab-btn:hover { color: #0f766e; }
-    .tab-btn.active { color: #0f766e; border-bottom-color: #0f766e; }
-    .tab-content { display: none; animation: fadeIn 0.3s ease; }
-    .tab-content.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-    .mes-selector {
       display: flex;
       align-items: center;
-      gap: 10px;
-      background: #fff;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      margin-bottom: 14px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      justify-content: space-between;
+      gap: 8px;
     }
-    .mes-selector label { font-weight: bold; font-size: 14px; color: #1e293b; }
-    .mes-selector input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; }
-    
-    .vendas-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-    .venda-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      padding: 12px;
+
+    .meta-box .valor-grande {
+      margin-top: 10px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .linha-info {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      gap: 10px;
+      font-size: 13px;
+      color: var(--texto-medio);
+      padding: 6px 0;
+      border-bottom: 1px dashed #e9ebef;
     }
-    .venda-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-    .venda-data { font-size: 12px; color: #64748b; }
-    .venda-desc { font-size: 14px; font-weight: bold; color: #0f172a; }
-    .venda-valor { font-size: 15px; font-weight: bold; color: #0f766e; text-align: right; }
-    .btn-delete { background: #fee2e2; color: #991b1b; padding: 6px 10px; border-radius: 6px; font-size: 12px; min-height: unset; margin-left: 10px; }
 
-    .historico-total { font-weight: bold; font-size: 16px; color: #166534; }
+    .linha-info:last-child { border-bottom: none; }
+    .linha-info strong { color: var(--texto); }
 
-    @media (max-width: 700px) {
-      body { padding: 10px; }
-      table { font-size: 13px; }
-      th, td { padding: 8px; }
-      .actions button { width: 100%; }
-    }
+    .lista-lancamentos td { white-space: nowrap; }
   </style>
-  <script src="transitions.js"></script>
 </head>
 <body>
-  <div class="page">
-    <a class="back-link" href="dashboard.html">&#8592; Voltar ao Dashboard</a>
+  <div class="page-head">
+    <h1>Vendas e metas</h1>
+    <p>Registre suas vendas do dia e acompanhe os calculos separados da meta estabelecida pela loja e da sua meta pessoal. A comissao segue a tabela de faixas (40 mil = 0,5%, 46 mil = 1%, e assim por diante) e ainda recebe uma <strong>bonificacao de <span id="txtTaxa">0,6</span>%</strong> sobre o faturamento quando a meta estabelecida e batida.</p>
+  </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" onclick="abrirAba('tab-metas', this)">🎯 Metas</button>
-      <button class="tab-btn" onclick="abrirAba('tab-registros', this)">📝 Venda do Dia</button>
-      <button class="tab-btn" onclick="abrirAba('tab-historico', this)">📅 Histórico Mensal</button>
+  <div class="tabs">
+    <button class="tab-btn ativo" type="button" data-aba="resumo">Resumo</button>
+    <button class="tab-btn" type="button" data-aba="lancamentos">Lancamentos</button>
+    <button class="tab-btn" type="button" data-aba="historico">Historico mensal</button>
+    <button class="tab-btn" type="button" data-aba="config">Configuracao de metas</button>
+  </div>
+
+  <!-- ============================ RESUMO ============================== -->
+  <section id="abaResumo" class="painel-tab ativo">
+    <div class="grid grid-kpi" style="margin-bottom:16px">
+      <article class="kpi">
+        <div class="kpi-label">Faturamento do mes</div>
+        <div id="kpiFaturamento" class="kpi-valor">R$ 0,00</div>
+        <div id="kpiFaturamentoNota" class="kpi-nota">-</div>
+      </article>
+      <article class="kpi verde">
+        <div class="kpi-label">Comissao a receber</div>
+        <div id="kpiComissao" class="kpi-valor">R$ 0,00</div>
+        <div id="kpiComissaoNota" class="kpi-nota">-</div>
+      </article>
+      <article class="kpi azul">
+        <div class="kpi-label">Ticket medio</div>
+        <div id="kpiTicket" class="kpi-valor">R$ 0,00</div>
+        <div id="kpiTicketNota" class="kpi-nota">-</div>
+      </article>
+      <article class="kpi cinza">
+        <div class="kpi-label">Projecao do mes</div>
+        <div id="kpiProjecao" class="kpi-valor">R$ 0,00</div>
+        <div id="kpiProjecaoNota" class="kpi-nota">-</div>
+      </article>
     </div>
 
-    <!-- ABA 1: METAS -->
-    <div id="tab-metas" class="tab-content active">
-    <div class="header">
-      <h1>&#128176; Area do Vendedor - Meta Mensal</h1>
-      <p class="subtitle">Preencha seu faturamento atual e acompanhe comissao, valor diario necessario e distancia para a proxima meta.</p>
-      <div id="planBanner" class="plan-banner"></div>
-
-      <div class="form-grid">
-        <div class="field">
-          <label for="faturamentoAtual">Faturamento atual no mes (R$)</label>
-          <input id="faturamentoAtual" type="text" inputmode="decimal" value="0,00" placeholder="Ex: 35.000,00">
-        </div>
-        <div class="field">
-          <label for="metaPessoal">Meta que deseja atingir (R$)</label>
-          <input id="metaPessoal" type="text" inputmode="decimal" value="40.000,00" placeholder="Ex: 56.000,00">
-          <div id="objetivoNota" class="inline-note">Meta de objetivo nao fixada.</div>
-        </div>
-        <div class="field">
-          <label for="diasRestantes">Dias trabalhados restantes no mês</label>
-          <input id="diasRestantes" type="number" min="1" step="1" value="1">
-        </div>
-        <div class="field">
-          <label for="valorMedioVenda">Valor medio por venda (R$)</label>
-          <input id="valorMedioVenda" type="text" inputmode="decimal" value="0,00" placeholder="Ex: 120,00">
+    <div class="grid grid-2" style="margin-bottom:16px">
+      <div class="meta-box destaque">
+        <h4>Meta estabelecida <span id="pillEstab" class="pill">-</span></h4>
+        <div id="estabValor" class="valor-grande">R$ 0,00</div>
+        <div class="barra"><span id="estabBarra" style="width:0%"></span></div>
+        <div style="margin-top:12px">
+          <div class="linha-info"><span>Faturamento atual</span><strong id="estabAtual">-</strong></div>
+          <div class="linha-info"><span>Progresso</span><strong id="estabProgresso">-</strong></div>
+          <div class="linha-info"><span>Falta atingir</span><strong id="estabFalta">-</strong></div>
+          <div class="linha-info"><span>Necessario por dia</span><strong id="estabPorDia">-</strong></div>
+          <div class="linha-info"><span>Vendas medias que faltam</span><strong id="estabVendas">-</strong></div>
+          <div class="linha-info"><span>Comissao ao fechar na meta</span><strong id="estabComissao">-</strong></div>
+          <div class="linha-info"><span>Composicao</span><strong id="estabComposicao">-</strong></div>
         </div>
       </div>
 
-      <div class="actions">
-        <button class="primary" type="button" onclick="calcularMetas()">Calcular metas</button>
-        <button class="secondary" type="button" onclick="preencherDiasAutomatico()">Atualizar dias de trabalho automaticamente</button>
-        <button class="secondary" type="button" onclick="alternarObjetivoFixo()">Fixar objetivo</button>
-      </div>
-      <p class="hint">Tabela de comissao: 40 mil = 0,50% | 46 mil = 1% | 50 mil = 1,2% | 56 mil = 1,5% | 64 mil = 2% | 72 mil = 2,25% | 80 mil = 2,5% | 88 mil = 2,6% | 96 mil = 2,7% | 104 mil = 2,8% | 112 mil = 2,9% | o valor diario considera as folgas marcadas no calendario.</p>
-    </div>
-
-    <div class="summary-grid">
-      <div class="summary-card highlight">
-        <div class="summary-label">Comissao total estimada</div>
-        <div id="comissaoAtual" class="summary-value">R$ 0,00</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Proxima meta oficial</div>
-        <div id="proximaMeta" class="summary-value">-</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Falta para proxima meta</div>
-        <div id="faltaProxima" class="summary-value">R$ 0,00</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Valor por dia para meta pessoal</div>
-        <div id="porDiaMetaPessoal" class="summary-value">R$ 0,00</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Comissao por venda media</div>
-        <div id="comissaoPorVenda" class="summary-value">R$ 0,00</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Objetivo fixado</div>
-        <div id="objetivoFixado" class="summary-value">Nenhum objetivo fixado</div>
-      </div>
-      <div id="metaPessoalCard" class="summary-card meta-status status-empty">
-        <div class="summary-label">Status da meta pessoal</div>
-        <div id="metaPessoalStatus" class="summary-value">Sem meta definida</div>
-        <div id="metaPessoalProgresso" class="summary-note">Defina uma meta para acompanhar por cor.</div>
+      <div class="meta-box">
+        <h4>Meta pessoal <span id="pillPessoal" class="pill">-</span></h4>
+        <div id="pessoalValor" class="valor-grande">R$ 0,00</div>
+        <div class="barra"><span id="pessoalBarra" style="width:0%"></span></div>
+        <div style="margin-top:12px">
+          <div class="linha-info"><span>Faturamento atual</span><strong id="pessoalAtual">-</strong></div>
+          <div class="linha-info"><span>Progresso</span><strong id="pessoalProgresso">-</strong></div>
+          <div class="linha-info"><span>Falta atingir</span><strong id="pessoalFalta">-</strong></div>
+          <div class="linha-info"><span>Necessario por dia</span><strong id="pessoalPorDia">-</strong></div>
+          <div class="linha-info"><span>Vendas medias que faltam</span><strong id="pessoalVendas">-</strong></div>
+          <div class="linha-info"><span>Comissao ao fechar na meta</span><strong id="pessoalComissao">-</strong></div>
+          <div class="linha-info"><span>Composicao</span><strong id="pessoalComposicao">-</strong></div>
+        </div>
       </div>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Meta</th>
-            <th>Percentual</th>
-            <th>Falta para atingir</th>
-            <th>Necessario por dia</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="metasBody"></tbody>
-      </table>
-    </div>
-    </div> <!-- FIM ABA METAS -->
-
-    <!-- ABA 2: REGISTROS DE VENDAS -->
-    <div id="tab-registros" class="tab-content">
-      <div class="mes-selector">
-        <label for="mesFiltro">Mês de Referência:</label>
-        <input type="month" id="mesFiltro" onchange="alterarMesReferencia()">
+    <div class="tabela-wrap" style="margin-bottom:16px">
+      <div class="card-titulo" style="padding:16px 18px 0">
+        <h3>Comparativo das metas</h3>
+        <small>Quanto cada meta paga de comissao ao ser fechada</small>
       </div>
-
-      <div class="header">
-        <h2>Adicionar Venda do Dia</h2>
-        <div class="form-grid" style="margin-top: 10px;">
-          <div class="field">
-            <label>Data</label>
-            <input id="vendaData" type="date">
-          </div>
-          <div class="field">
-            <label>Valor Total do Dia (R$)</label>
-            <input id="vendaValor" type="text" inputmode="decimal" placeholder="Ex: 1.450,00" oninput="aplicarMascaraMoeda(this)">
-          </div>
-        </div>
-        <div class="actions">
-          <button class="primary" type="button" onclick="salvarVenda()">Salvar Venda do Dia</button>
-        </div>
-      </div>
-
-      <div class="summary-card highlight" style="margin-top: 14px;">
-        <div class="summary-label">Total do Mês Selecionado</div>
-        <div id="vendasTotalMes" class="summary-value">R$ 0,00</div>
-      </div>
-
-      <div id="listaVendas" class="vendas-list">
-        <!-- Vendas renderizadas aqui -->
-      </div>
-    </div> <!-- FIM ABA REGISTROS -->
-
-    <!-- ABA 3: HISTÓRICO MENSAL -->
-    <div id="tab-historico" class="tab-content">
-      <div class="header">
-        <h2>Histórico Mensal</h2>
-        <p class="subtitle">Adicione ou edite o faturamento total fechado de meses anteriores.</p>
-        
-        <div class="form-grid" style="margin-top: 10px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-          <div class="field">
-            <label>Mês / Ano</label>
-            <input id="historicoMesForm" type="month">
-          </div>
-          <div class="field">
-            <label>Faturamento (R$)</label>
-            <input id="historicoValorForm" type="text" inputmode="decimal" placeholder="Ex: 45.000,00" oninput="aplicarMascaraMoeda(this)">
-          </div>
-        </div>
-        <div class="actions" style="margin-bottom: 4px;">
-          <button class="primary" type="button" onclick="salvarHistoricoManual()">Salvar Mês no Histórico</button>
-        </div>
-      </div>
-      
-      <div class="table-wrap">
+      <div class="tabela-scroll">
         <table>
           <thead>
             <tr>
-              <th>Mês / Ano</th>
-              <th>Faturamento Total</th>
-              <th>Meta do Mês</th>
+              <th>Meta</th>
+              <th>Valor</th>
+              <th>Progresso</th>
+              <th>Falta</th>
+              <th>Por dia</th>
+              <th>Comissao ao atingir</th>
+              <th>Status</th>
             </tr>
           </thead>
-          <tbody id="historicoBody">
-            <!-- Histórico renderizado aqui -->
-          </tbody>
+          <tbody id="tabelaMetas"></tbody>
         </table>
       </div>
-    </div> <!-- FIM ABA HISTÓRICO -->
+    </div>
 
-  </div>
+    <div class="tabela-wrap">
+      <div class="card-titulo" style="padding:16px 18px 0">
+        <h3>Tabela de comissao por faixa</h3>
+        <small>Percentual oficial + bonificacao de <span id="txtBonusTabela">0,6</span>% a partir da meta estabelecida</small>
+      </div>
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Faixa</th>
+              <th>Percentual</th>
+              <th>Falta atingir</th>
+              <th>Necessario por dia</th>
+              <th>Comissao ao atingir</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaFaixas"></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="dica" style="margin-top:10px">Os dias restantes sao calculados automaticamente ate o ultimo dia do mes. A coluna "comissao ao atingir" ja soma a bonificacao nas faixas que ficam em cima ou acima da meta estabelecida.</p>
+  </section>
 
+  <!-- ========================= LANCAMENTOS ============================ -->
+  <section id="abaLancamentos" class="painel-tab">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titulo">
+        <h3>Lancar venda</h3>
+        <small>Cada venda registrada alimenta o dashboard e o grafico</small>
+      </div>
+      <div class="form-grid">
+        <div class="campo">
+          <label for="lancValor">Valor da venda (R$)</label>
+          <input id="lancValor" type="text" inputmode="decimal" value="0,00">
+        </div>
+        <div class="campo">
+          <label for="lancData">Data</label>
+          <input id="lancData" type="date">
+        </div>
+        <div class="campo">
+          <label for="lancPecas">Pecas vendidas</label>
+          <input id="lancPecas" type="number" min="0" step="1" value="1">
+        </div>
+        <div class="campo">
+          <label for="lancObs">Observacao</label>
+          <input id="lancObs" type="text" maxlength="120" placeholder="Ex: cliente Joao - tenis + meia">
+        </div>
+      </div>
+      <div class="acoes" style="margin-top:14px">
+        <button class="btn btn-primario" type="button" onclick="lancarVenda()">Registrar venda</button>
+        <button class="btn btn-neutro" type="button" onclick="limparFormulario()">Limpar campos</button>
+      </div>
+      <div id="statusLanc" class="status"></div>
+    </div>
+
+    <div class="tabela-wrap">
+      <div class="card-titulo" style="padding:16px 18px 0">
+        <h3>Lancamentos do mes</h3>
+        <small id="resumoLancamentos">-</small>
+      </div>
+      <div class="tabela-scroll">
+        <table class="lista-lancamentos">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Valor</th>
+              <th>Pecas</th>
+              <th>Observacao</th>
+              <th>Acao</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaLancamentos"></tbody>
+        </table>
+      </div>
+      <div id="vazioLancamentos" class="vazio">Nenhuma venda registrada neste mes ainda.</div>
+    </div>
+  </section>
+
+  <!-- ========================== HISTORICO ============================= -->
+  <section id="abaHistorico" class="painel-tab">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titulo">
+        <h3>Fechamento manual de um mes</h3>
+        <small>Use para meses antigos, sem lancamento dia a dia</small>
+      </div>
+      <div class="form-grid">
+        <div class="campo">
+          <label for="histMes">Mes</label>
+          <input id="histMes" type="month">
+        </div>
+        <div class="campo">
+          <label for="histValor">Faturamento do mes (R$)</label>
+          <input id="histValor" type="text" inputmode="decimal" value="0,00">
+        </div>
+      </div>
+      <div class="acoes" style="margin-top:14px">
+        <button class="btn btn-primario" type="button" onclick="salvarHistorico()">Salvar fechamento</button>
+      </div>
+      <p class="dica" style="margin-top:10px">O valor manual substitui a soma dos lancamentos daquele mes. Salve com zero para voltar a usar a soma.</p>
+      <div id="statusHistorico" class="status"></div>
+    </div>
+
+    <div class="tabela-wrap">
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>Faturamento</th>
+              <th>Origem</th>
+              <th>Faixa</th>
+              <th>Comissao</th>
+              <th>Meta</th>
+              <th>Acao</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaHistorico"></tbody>
+        </table>
+      </div>
+      <div id="vazioHistorico" class="vazio">Nenhum mes registrado ainda.</div>
+    </div>
+  </section>
+
+  <!-- =========================== CONFIG =============================== -->
+  <section id="abaConfig" class="painel-tab">
+    <div class="card">
+      <div class="card-titulo">
+        <h3>Configuracao de metas e comissao</h3>
+        <small>Valores usados em todo o sistema</small>
+      </div>
+
+      <div class="form-grid">
+        <div class="campo">
+          <label for="cfgEstabelecida">Meta estabelecida (R$)</label>
+          <input id="cfgEstabelecida" type="text" inputmode="decimal">
+          <span class="dica">Meta definida pela loja. Padrao: R$ 84.000,00</span>
+        </div>
+        <div class="campo">
+          <label for="cfgPessoal">Meta pessoal (R$)</label>
+          <input id="cfgPessoal" type="text" inputmode="decimal">
+          <span class="dica">Seu objetivo proprio. Padrao: R$ 96.000,00</span>
+        </div>
+        <div class="campo">
+          <label for="cfgComissao">Bonificacao ao atingir a meta estabelecida (%)</label>
+          <input id="cfgComissao" type="number" min="0" step="0.05">
+          <span class="dica">Padrao: 0,6% somados ao percentual da faixa</span>
+        </div>
+        <div class="campo">
+          <label for="cfgTicket">Valor medio por venda (R$)</label>
+          <input id="cfgTicket" type="text" inputmode="decimal">
+          <span class="dica">Usado para estimar quantas vendas faltam</span>
+        </div>
+        <div class="campo">
+          <label for="cfgAjuste">Vendas ja realizadas antes do sistema (R$)</label>
+          <input id="cfgAjuste" type="text" inputmode="decimal">
+          <span class="dica">Somado ao faturamento do mes atual</span>
+        </div>
+      </div>
+
+      <div class="acoes" style="margin-top:16px">
+        <button class="btn btn-primario" type="button" onclick="salvarConfiguracao()">Salvar configuracao</button>
+        <button class="btn btn-secundario" type="button" onclick="restaurarPadrao()">Restaurar padrao (84 mil / 96 mil / 0,6%)</button>
+      </div>
+      <div id="statusConfig" class="status"></div>
+    </div>
+  </section>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
   <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="app-shell.js"></script>
   <script>
     const sessao = AuthDB.exigirLogin();
-    const OBJETIVO_FIXO_KEY = `controleSecao_objetivo_fixo_v1_${sessao.login}`;
-    const VENDAS_FORM_KEY = `controleSecao_vendas_form_v1_${sessao.login}`;
-    const VENDAS_DB_KEY = `controleSecao_vendas_db_v1_${sessao.login}`;
-    const HISTORICO_MANUAL_KEY = `controleSecao_historico_manual_v1_${sessao.login}`;
-    const HISTORICO_METAS_KEY = `controleSecao_historico_metas_v1_${sessao.login}`;
 
-    const metas = [
-      { valor: 40000, percentual: 0.5 },
-      { valor: 46000, percentual: 1.0 },
-      { valor: 50000, percentual: 1.2 },
-      { valor: 56000, percentual: 1.5 },
-      { valor: 64000, percentual: 2.0 },
-      { valor: 72000, percentual: 2.25 },
-      { valor: 80000, percentual: 2.5 },
-      { valor: 88000, percentual: 2.6 },
-      { valor: 96000, percentual: 2.7 },
-      { valor: 104000, percentual: 2.8 },
-      { valor: 112000, percentual: 2.9 }
-    ];
-
-    function formatarMoeda(valor) {
-      return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    if (sessao) {
+      CRM.migrarDadosAntigos();
+      iniciar();
     }
 
-    function formatarNumeroBR(valor) {
-      return Number(valor || 0).toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+    function iniciar() {
+      document.getElementById("lancData").value = CRM.hojeISO();
+      configurarAbas();
+      configurarCamposMoeda();
+      carregarConfiguracao();
+      atualizarTudo();
+    }
+
+    function configurarAbas() {
+      const botoes = document.querySelectorAll(".tab-btn");
+      const paineis = {
+        resumo: document.getElementById("abaResumo"),
+        lancamentos: document.getElementById("abaLancamentos"),
+        historico: document.getElementById("abaHistorico"),
+        config: document.getElementById("abaConfig")
+      };
+
+      botoes.forEach((botao) => {
+        botao.addEventListener("click", () => {
+          const alvo = botao.dataset.aba;
+          botoes.forEach((outro) => outro.classList.toggle("ativo", outro === botao));
+          Object.keys(paineis).forEach((chave) => paineis[chave].classList.toggle("ativo", chave === alvo));
+        });
       });
-    }
-
-    function normalizarMoedaParaNumero(valor) {
-      const somenteDigitos = String(valor || "").replace(/\D/g, "");
-      if (!somenteDigitos) {
-        return 0;
-      }
-
-      return Number(somenteDigitos) / 100;
-    }
-
-    function obterValorCampoMoeda(idCampo) {
-      const campo = document.getElementById(idCampo);
-      return Math.max(0, normalizarMoedaParaNumero(campo.value));
-    }
-
-    function aplicarMascaraMoeda(campo) {
-      const valor = normalizarMoedaParaNumero(campo.value);
-      campo.value = formatarNumeroBR(valor);
     }
 
     function configurarCamposMoeda() {
-      const idsMoeda = ["faturamentoAtual", "metaPessoal", "valorMedioVenda"];
-
-      idsMoeda.forEach((idCampo) => {
-        const campo = document.getElementById(idCampo);
-        if (!campo) {
-          return;
-        }
-
-        aplicarMascaraMoeda(campo);
+      ["lancValor", "histValor", "cfgEstabelecida", "cfgPessoal", "cfgTicket", "cfgAjuste"].forEach((id) => {
+        const campo = document.getElementById(id);
         campo.addEventListener("input", () => {
-          aplicarMascaraMoeda(campo);
-          calcularMetas();
-          salvarEstadoFormulario();
-        });
-        campo.addEventListener("blur", () => {
-          aplicarMascaraMoeda(campo);
-          salvarEstadoFormulario();
+          campo.value = CRM.numeroBR(CRM.moedaParaNumero(campo.value));
         });
       });
     }
 
-    function formatarPercentual(valor) {
-      return `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`;
+    function carregarConfiguracao() {
+      const config = CRM.obterConfig();
+      document.getElementById("cfgEstabelecida").value = CRM.numeroBR(config.metaEstabelecida);
+      document.getElementById("cfgPessoal").value = CRM.numeroBR(config.metaPessoal);
+      document.getElementById("cfgComissao").value = config.percentualBonus;
+      document.getElementById("cfgTicket").value = CRM.numeroBR(config.valorMedioVenda);
+      document.getElementById("cfgAjuste").value = CRM.numeroBR(config.ajusteInicial);
     }
 
-    function formatarData(dataISO) {
-      if (!dataISO) {
-        return "-";
-      }
+    function salvarConfiguracao() {
+      CRM.salvarConfig({
+        metaEstabelecida: CRM.moedaParaNumero(document.getElementById("cfgEstabelecida").value),
+        metaPessoal: CRM.moedaParaNumero(document.getElementById("cfgPessoal").value),
+        percentualBonus: Number(document.getElementById("cfgComissao").value) || 0,
+        valorMedioVenda: CRM.moedaParaNumero(document.getElementById("cfgTicket").value),
+        ajusteInicial: CRM.moedaParaNumero(document.getElementById("cfgAjuste").value)
+      });
 
-      return new Date(dataISO).toLocaleDateString("pt-BR");
+      const status = document.getElementById("statusConfig");
+      status.textContent = "Configuracao salva. Os calculos foram atualizados.";
+      status.className = "status ok";
+      atualizarTudo();
     }
 
-    function carregarEstadoFormulario() {
-      try {
-        const bruto = localStorage.getItem(VENDAS_FORM_KEY);
-        if (!bruto) {
-          return null;
-        }
+    function restaurarPadrao() {
+      CRM.salvarConfig({
+        metaEstabelecida: CRM.PADRAO_CONFIG.metaEstabelecida,
+        metaPessoal: CRM.PADRAO_CONFIG.metaPessoal,
+        percentualBonus: CRM.PADRAO_CONFIG.percentualBonus
+      });
+      carregarConfiguracao();
+      atualizarTudo();
 
-        const estado = JSON.parse(bruto);
-        return estado && typeof estado === "object" ? estado : null;
-      } catch (erro) {
-        return null;
-      }
+      const status = document.getElementById("statusConfig");
+      status.textContent = "Valores padrao restaurados.";
+      status.className = "status ok";
     }
 
-    function salvarEstadoFormulario() {
-      const estado = {
-        faturamentoAtual: obterValorCampoMoeda("faturamentoAtual"),
-        metaPessoal: obterValorCampoMoeda("metaPessoal"),
-        valorMedioVenda: obterValorCampoMoeda("valorMedioVenda"),
-        diasRestantes: Math.max(1, Number(document.getElementById("diasRestantes").value) || 1),
-        atualizadoEm: new Date().toISOString()
-      };
+    function lancarVenda() {
+      const resultado = CRM.adicionarLancamento({
+        valor: CRM.moedaParaNumero(document.getElementById("lancValor").value),
+        data: document.getElementById("lancData").value,
+        pecas: Number(document.getElementById("lancPecas").value) || 0,
+        obs: document.getElementById("lancObs").value
+      });
 
-      localStorage.setItem(VENDAS_FORM_KEY, JSON.stringify(estado));
-    }
+      const status = document.getElementById("statusLanc");
+      status.textContent = resultado.mensagem;
+      status.className = `status ${resultado.ok ? "ok" : "error"}`;
 
-    function aplicarEstadoFormulario() {
-      const estado = carregarEstadoFormulario();
-      if (!estado) {
-        return false;
-      }
-
-      document.getElementById("faturamentoAtual").value = formatarNumeroBR(Math.max(0, Number(estado.faturamentoAtual) || 0));
-      document.getElementById("metaPessoal").value = formatarNumeroBR(Math.max(0, Number(estado.metaPessoal) || 0));
-      document.getElementById("valorMedioVenda").value = formatarNumeroBR(Math.max(0, Number(estado.valorMedioVenda) || 0));
-      document.getElementById("diasRestantes").value = Math.max(1, Number(estado.diasRestantes) || 1);
-
-      return true;
-    }
-
-    function carregarObjetivoFixo() {
-      const bruto = localStorage.getItem(OBJETIVO_FIXO_KEY);
-      if (!bruto) {
-        return null;
-      }
-
-      try {
-        const dados = JSON.parse(bruto);
-        const valor = Math.max(0, Number(dados?.valor) || 0);
-        return valor > 0 ? dados : null;
-      } catch (erro) {
-        return null;
+      if (resultado.ok) {
+        limparFormulario();
+        atualizarTudo();
       }
     }
 
-    function salvarObjetivoFixo(valor) {
-      const dados = {
-        valor: Math.max(0, Number(valor) || 0),
-        criadoEm: new Date().toISOString()
-      };
-      localStorage.setItem(OBJETIVO_FIXO_KEY, JSON.stringify(dados));
-      return dados;
+    function limparFormulario() {
+      document.getElementById("lancValor").value = "0,00";
+      document.getElementById("lancPecas").value = "1";
+      document.getElementById("lancObs").value = "";
+      document.getElementById("lancData").value = CRM.hojeISO();
     }
 
-    function limparObjetivoFixo() {
-      localStorage.removeItem(OBJETIVO_FIXO_KEY);
-    }
-
-    function atualizarInterfaceObjetivoFixo() {
-      const objetivo = carregarObjetivoFixo();
-      const inputMeta = document.getElementById("metaPessoal");
-      const nota = document.getElementById("objetivoNota");
-      const resumo = document.getElementById("objetivoFixado");
-      const botao = document.querySelector('button[onclick="alternarObjetivoFixo()"]');
-
-      if (!objetivo) {
-        inputMeta.readOnly = false;
-        nota.textContent = "Meta de objetivo nao fixada.";
-        resumo.textContent = "Nenhum objetivo fixado";
-        botao.textContent = "Fixar objetivo";
+    function excluirLancamento(id) {
+      if (!confirm("Excluir este lancamento de venda?")) {
         return;
       }
 
-      inputMeta.value = formatarNumeroBR(objetivo.valor);
-      inputMeta.readOnly = true;
-      nota.textContent = `Meta fixada em ${formatarMoeda(objetivo.valor)}.`;
-      resumo.textContent = formatarMoeda(objetivo.valor);
-      botao.textContent = "Desfixar objetivo";
+      CRM.removerLancamento(id);
+      atualizarTudo();
     }
 
-    function alternarObjetivoFixo() {
-      const objetivoAtual = carregarObjetivoFixo();
+    function atualizarTudo() {
+      const dados = CRM.resumo();
+      const comissao = dados.comissao;
+      document.getElementById("txtTaxa").textContent = CRM.numeroBR(dados.config.percentualBonus, 1);
+      document.getElementById("txtBonusTabela").textContent = CRM.numeroBR(dados.config.percentualBonus, 1);
 
-      if (objetivoAtual) {
-        limparObjetivoFixo();
-        atualizarInterfaceObjetivoFixo();
-        salvarEstadoFormulario();
-        calcularMetas();
-        return;
-      }
+      document.getElementById("kpiFaturamento").textContent = CRM.moeda(dados.faturamento);
+      document.getElementById("kpiFaturamentoNota").textContent =
+        `${dados.lancamentos.length} lancamento(s) | ${dados.pecas} peca(s) | dia ${dados.diaAtual} de ${dados.totalDias}`;
 
-      const valor = obterValorCampoMoeda("metaPessoal");
-      if (valor <= 0) {
-        alert("Informe uma meta de objetivo maior que zero antes de fixar.");
-        return;
-      }
+      document.getElementById("kpiComissao").textContent = CRM.moeda(comissao.valorTotal);
+      document.getElementById("kpiComissaoNota").textContent = comissao.bonusAtivo
+        ? `Faixa ${CRM.percentual(comissao.percentualFaixa)} (${CRM.moeda(comissao.valorFaixa)}) + bonus ${CRM.percentual(comissao.percentualBonus)} (${CRM.moeda(comissao.valorBonus)})`
+        : comissao.faixa
+          ? `Faixa de ${CRM.moedaCurta(comissao.faixaValor)} a ${CRM.percentual(comissao.percentualFaixa)}. Bonus libera na meta estabelecida.`
+          : `Nenhuma faixa atingida. Faltam ${CRM.moeda(dados.faltaProximaFaixa)} para a faixa de ${CRM.moedaCurta(CRM.FAIXAS_COMISSAO[0].valor)}.`;
 
-      salvarObjetivoFixo(valor);
-      atualizarInterfaceObjetivoFixo();
-      salvarEstadoFormulario();
-      calcularMetas();
+      document.getElementById("kpiTicket").textContent = CRM.moeda(dados.ticketMedio);
+      document.getElementById("kpiTicketNota").textContent = "Media por venda registrada no mes";
+
+      document.getElementById("kpiProjecao").textContent = CRM.moeda(dados.projecao);
+      document.getElementById("kpiProjecaoNota").textContent =
+        `No ritmo atual de ${CRM.moeda(dados.mediaDiaria)} por dia`;
+
+      preencherMeta("estab", dados.estabelecida, dados, dados.necessarioPorDiaEstabelecida, "pillEstab");
+      preencherMeta("pessoal", dados.pessoal, dados, dados.necessarioPorDiaPessoal, "pillPessoal");
+
+      montarTabelaMetas(dados);
+      montarTabelaFaixas(dados);
+      montarTabelaLancamentos(dados);
+      montarHistorico();
     }
 
-    function atualizarBannerPlano() {
-      if (!sessao) {
-        return;
-      }
+    function salvarHistorico() {
+      const status = document.getElementById("statusHistorico");
+      const resultado = CRM.salvarHistoricoManual(
+        document.getElementById("histMes").value,
+        CRM.moedaParaNumero(document.getElementById("histValor").value)
+      );
 
-      const status = AuthDB.obterStatusUsuario(sessao.login);
-      const banner = document.getElementById("planBanner");
+      status.textContent = resultado.mensagem;
+      status.className = `status ${resultado.ok ? "ok" : "error"}`;
 
-      if (!status) {
-        banner.textContent = "";
-        return;
-      }
-
-      if (status.vitalicio) {
-        banner.innerHTML = `<strong>Usuario vitalicio. Acesso liberado sem vencimento.</strong>Nao ha prazo de expiracao para este usuario.`;
-        return;
-      }
-
-      const valorPlano = status.planoDias === 90 ? 50 : 20;
-      banner.innerHTML = status.ativo
-        ? `<strong>Plano ativo de ${status.planoDias} dias por ${formatarMoeda(valorPlano)}.</strong>Faltam ${status.diasRestantes} dia(s) para expirar. Vencimento em ${formatarData(status.assinaturaFimEm)}.`
-        : `<strong>${status.mensagem}</strong>Entre em contato para regularizar o acesso.`;
-    }
-
-    function chaveFolgasCalendario(ano, mes) {
-      const mesFormatado = String(mes + 1).padStart(2, "0");
-      return `controleSecao_folgas_v1_${sessao.login}_${ano}-${mesFormatado}`;
-    }
-
-    function lerFolgasCalendario(ano, mes) {
-      const bruto = localStorage.getItem(chaveFolgasCalendario(ano, mes));
-
-      if (!bruto) {
-        return [];
-      }
-
-      try {
-        const dados = JSON.parse(bruto);
-        if (!Array.isArray(dados)) {
-          return [];
-        }
-
-        return dados
-          .map((valor) => Number(valor))
-          .filter((valor) => Number.isInteger(valor) && valor >= 1 && valor <= 31)
-          .sort((a, b) => a - b);
-      } catch {
-        return [];
+      if (resultado.ok) {
+        document.getElementById("histValor").value = "0,00";
+        atualizarTudo();
       }
     }
 
-    function calcularDiasRestantesMes() {
-      const hoje = new Date();
-      const ano = hoje.getFullYear();
-      const mes = hoje.getMonth();
-      const ultimoDia = new Date(ano, mes + 1, 0).getDate();
-      const folgas = new Set(lerFolgasCalendario(ano, mes));
-
-      let diasTrabalhados = 0;
-      for (let dia = hoje.getDate(); dia <= ultimoDia; dia += 1) {
-        if (!folgas.has(dia)) {
-          diasTrabalhados += 1;
-        }
-      }
-
-      return Math.max(1, diasTrabalhados);
+    function nomeMes(competencia) {
+      const [ano, mes] = competencia.split("-").map(Number);
+      const nome = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      return nome.charAt(0).toUpperCase() + nome.slice(1);
     }
 
-    function preencherDiasAutomatico() {
-      document.getElementById("diasRestantes").value = calcularDiasRestantesMes();
-      salvarEstadoFormulario();
-      calcularMetas();
-    }
+    function montarHistorico() {
+      const linhas = CRM.historicoMensal();
+      const corpo = document.getElementById("tabelaHistorico");
+      const vazio = document.getElementById("vazioHistorico");
 
-    function calcularMetas() {
-      const faturamentoAtual = obterValorCampoMoeda("faturamentoAtual");
-      const metaPessoal = obterValorCampoMoeda("metaPessoal");
-      const diasRestantes = Math.max(1, Number(document.getElementById("diasRestantes").value) || 1);
-      const valorMedioVenda = obterValorCampoMoeda("valorMedioVenda");
-      const cardMeta = document.getElementById("metaPessoalCard");
-      const textoStatusMeta = document.getElementById("metaPessoalStatus");
-      const textoProgressoMeta = document.getElementById("metaPessoalProgresso");
+      corpo.innerHTML = "";
+      vazio.style.display = linhas.length === 0 ? "block" : "none";
 
-      let faixaAtual = null;
-      for (const meta of metas) {
-        if (faturamentoAtual >= meta.valor) {
-          faixaAtual = meta;
-        }
-      }
-
-      const percentualAtual = faixaAtual ? faixaAtual.percentual : 0;
-      const comissaoAtual = faturamentoAtual * (percentualAtual / 100);
-
-      let proximaMeta = null;
-      for (const meta of metas) {
-        if (faturamentoAtual < meta.valor) {
-          proximaMeta = meta;
-          break;
-        }
-      }
-
-      const faltaParaProxima = proximaMeta ? Math.max(0, proximaMeta.valor - faturamentoAtual) : 0;
-      const faltaMetaPessoal = Math.max(0, metaPessoal - faturamentoAtual);
-      const porDiaMetaPessoal = faltaMetaPessoal / diasRestantes;
-      const comissaoPorVenda = valorMedioVenda * (percentualAtual / 100);
-      const progressoMetaPessoal = metaPessoal > 0 ? Math.min(100, (faturamentoAtual / metaPessoal) * 100) : 0;
-
-      document.getElementById("comissaoAtual").textContent = `${formatarMoeda(comissaoAtual)} (${formatarPercentual(percentualAtual)})`;
-      document.getElementById("proximaMeta").textContent = proximaMeta ? `${formatarMoeda(proximaMeta.valor)} (${formatarPercentual(proximaMeta.percentual)})` : "Todas as metas oficiais atingidas";
-      document.getElementById("faltaProxima").textContent = formatarMoeda(faltaParaProxima);
-      document.getElementById("porDiaMetaPessoal").textContent = formatarMoeda(porDiaMetaPessoal);
-      document.getElementById("comissaoPorVenda").textContent = valorMedioVenda > 0 ? `${formatarMoeda(comissaoPorVenda)} por venda` : "Informe o valor medio da venda";
-
-      cardMeta.className = "summary-card meta-status";
-      if (metaPessoal <= 0) {
-        cardMeta.classList.add("status-empty");
-        textoStatusMeta.textContent = "Sem meta definida";
-        textoProgressoMeta.textContent = "Defina uma meta para acompanhar por cor.";
-      } else if (progressoMetaPessoal >= 100) {
-        cardMeta.classList.add("status-hit");
-        textoStatusMeta.textContent = "Meta atingida";
-        textoProgressoMeta.textContent = `${formatarNumeroBR(progressoMetaPessoal)}% concluido`;
-      } else if (progressoMetaPessoal >= 85) {
-        cardMeta.classList.add("status-near");
-        textoStatusMeta.textContent = "Quase la";
-        textoProgressoMeta.textContent = `${formatarNumeroBR(progressoMetaPessoal)}% concluido`;
-      } else if (progressoMetaPessoal >= 50) {
-        cardMeta.classList.add("status-mid");
-        textoStatusMeta.textContent = "Progresso bom";
-        textoProgressoMeta.textContent = `${formatarNumeroBR(progressoMetaPessoal)}% concluido`;
-      } else {
-        cardMeta.classList.add("status-low");
-        textoStatusMeta.textContent = "Inicio da meta";
-        textoProgressoMeta.textContent = `${formatarNumeroBR(progressoMetaPessoal)}% concluido`;
-      }
-
-      const body = document.getElementById("metasBody");
-      body.innerHTML = "";
-
-      metas.forEach((meta) => {
-        const falta = Math.max(0, meta.valor - faturamentoAtual);
-        const porDia = falta / diasRestantes;
-        const atingida = falta === 0;
-        const percentualAtingido = meta.valor > 0 ? Math.min(100, (faturamentoAtual / meta.valor) * 100) : 0;
-
+      linhas.forEach((linha) => {
         const tr = document.createElement("tr");
-        if (percentualAtingido >= 100) {
-          tr.className = "status-hit";
-        } else if (percentualAtingido >= 85) {
-          tr.className = "status-near";
-        } else if (percentualAtingido >= 50) {
-          tr.className = "status-mid";
-        } else {
-          tr.className = "status-low";
+        if (linha.atingiuMeta) {
+          tr.className = "linha-atingida";
         }
+
+        const acao = linha.manual > 0
+          ? `<button class="btn btn-perigo btn-mini" type="button" data-mes="${linha.competencia}">Remover manual</button>`
+          : '<span class="dica">-</span>';
 
         tr.innerHTML = `
-          <td>${formatarMoeda(meta.valor)}</td>
-          <td>${formatarPercentual(meta.percentual)}</td>
-          <td>${formatarMoeda(falta)}</td>
-          <td>${formatarMoeda(porDia)}</td>
+          <td><strong>${nomeMes(linha.competencia)}</strong></td>
+          <td>${CRM.moeda(linha.total)}</td>
+          <td>${linha.manual > 0 ? "Fechamento manual" : `${CRM.moeda(linha.lancado)} em lancamentos`}</td>
+          <td>${CRM.percentual(linha.comissao.percentualFaixa)}${linha.comissao.bonusAtivo ? ` + ${CRM.percentual(linha.comissao.percentualBonus)}` : ""}</td>
+          <td><strong>${CRM.moeda(linha.comissao.valorTotal)}</strong></td>
+          <td><span class="pill ${linha.atingiuMeta ? "ok" : "wait"}">${linha.atingiuMeta ? "Batida" : "Nao batida"}</span></td>
+          <td>${acao}</td>
+        `;
+
+        const botao = tr.querySelector("button[data-mes]");
+        if (botao) {
+          botao.addEventListener("click", () => {
+            CRM.salvarHistoricoManual(linha.competencia, 0);
+            atualizarTudo();
+          });
+        }
+
+        corpo.appendChild(tr);
+      });
+    }
+
+    function preencherMeta(prefixo, meta, dados, porDia, idPill) {
+      const ticket = dados.config.valorMedioVenda;
+      const vendasFaltando = ticket > 0 ? Math.ceil(meta.falta / ticket) : 0;
+
+      document.getElementById(`${prefixo}Valor`).textContent = CRM.moeda(meta.meta);
+      document.getElementById(`${prefixo}Atual`).textContent = CRM.moeda(dados.faturamento);
+      document.getElementById(`${prefixo}Progresso`).textContent = `${CRM.numeroBR(meta.progresso, 1)}%`;
+      document.getElementById(`${prefixo}Falta`).textContent = CRM.moeda(meta.falta);
+      document.getElementById(`${prefixo}PorDia`).textContent = meta.atingiu
+        ? "Meta concluida"
+        : `${CRM.moeda(porDia)} em ${dados.diasRestantes} dia(s)`;
+      document.getElementById(`${prefixo}Vendas`).textContent = meta.atingiu
+        ? "-"
+        : (ticket > 0 ? `${vendasFaltando} venda(s) de ${CRM.moeda(ticket)}` : "Informe o valor medio por venda");
+      document.getElementById(`${prefixo}Comissao`).textContent = CRM.moeda(meta.previsaoSeAtingir);
+      document.getElementById(`${prefixo}Composicao`).textContent = meta.simulacao.bonusAtivo
+        ? `Faixa ${CRM.percentual(meta.simulacao.percentualFaixa)} + bonus ${CRM.percentual(meta.simulacao.percentualBonus)}`
+        : `Faixa ${CRM.percentual(meta.simulacao.percentualFaixa)} (sem bonus)`;
+
+      const barra = document.getElementById(`${prefixo}Barra`);
+      barra.style.width = `${Math.min(100, meta.progresso)}%`;
+      barra.parentElement.className = `barra ${meta.atingiu ? "verde" : ""}`;
+
+      const pill = document.getElementById(idPill);
+      pill.textContent = meta.atingiu ? "Atingida" : meta.progresso >= 85 ? "Quase la" : meta.progresso >= 50 ? "Em andamento" : "Inicio";
+      pill.className = `pill ${meta.atingiu ? "ok" : meta.progresso >= 50 ? "wait" : ""}`;
+    }
+
+    function montarTabelaMetas(dados) {
+      const linhas = [
+        { nome: "Meta estabelecida", meta: dados.estabelecida, porDia: dados.necessarioPorDiaEstabelecida },
+        { nome: "Meta pessoal", meta: dados.pessoal, porDia: dados.necessarioPorDiaPessoal }
+      ];
+
+      const corpo = document.getElementById("tabelaMetas");
+      corpo.innerHTML = "";
+
+      linhas.forEach((linha) => {
+        const tr = document.createElement("tr");
+        tr.className = linha.meta.atingiu ? "linha-atingida" : linha.meta.progresso >= 85 ? "linha-perto" : linha.meta.progresso >= 50 ? "linha-meio" : "";
+        tr.innerHTML = `
+          <td><strong>${linha.nome}</strong></td>
+          <td>${CRM.moeda(linha.meta.meta)}</td>
+          <td>${CRM.numeroBR(linha.meta.progresso, 1)}%</td>
+          <td>${CRM.moeda(linha.meta.falta)}</td>
+          <td>${linha.meta.atingiu ? "-" : CRM.moeda(linha.porDia)}</td>
+          <td><strong>${CRM.moeda(linha.meta.previsaoSeAtingir)}</strong><br><span class="dica">faixa ${CRM.percentual(linha.meta.simulacao.percentualFaixa)}${linha.meta.simulacao.bonusAtivo ? ` + bonus ${CRM.percentual(linha.meta.simulacao.percentualBonus)}` : ""}</span></td>
+          <td><span class="pill ${linha.meta.atingiu ? "ok" : "wait"}">${linha.meta.atingiu ? "Atingida" : "Em aberto"}</span></td>
+        `;
+        corpo.appendChild(tr);
+      });
+    }
+
+    function montarTabelaFaixas(dados) {
+      const corpo = document.getElementById("tabelaFaixas");
+      corpo.innerHTML = "";
+
+      CRM.FAIXAS_COMISSAO.forEach((faixa) => {
+        const falta = Math.max(0, faixa.valor - dados.faturamento);
+        const atingida = falta === 0;
+        const progresso = faixa.valor > 0 ? Math.min(100, (dados.faturamento / faixa.valor) * 100) : 0;
+        const simulacao = CRM.calcularComissaoDetalhada(faixa.valor, dados.config);
+        const faixaAtual = dados.faixaAtual && dados.faixaAtual.valor === faixa.valor;
+
+        const tr = document.createElement("tr");
+        tr.className = atingida ? "linha-atingida" : progresso >= 85 ? "linha-perto" : progresso >= 50 ? "linha-meio" : "";
+        tr.innerHTML = `
+          <td><strong>${CRM.moeda(faixa.valor)}</strong>${faixaAtual ? ' <span class="pill laranja">faixa atual</span>' : ""}</td>
+          <td>${CRM.percentual(faixa.percentual)}${simulacao.bonusAtivo ? ` + ${CRM.percentual(simulacao.percentualBonus)}` : ""}</td>
+          <td>${CRM.moeda(falta)}</td>
+          <td>${atingida ? "-" : CRM.moeda(falta / dados.diasRestantes)}</td>
+          <td><strong>${CRM.moeda(simulacao.valorTotal)}</strong>${simulacao.bonusAtivo ? `<br><span class="dica">${CRM.moeda(simulacao.valorFaixa)} + bonus ${CRM.moeda(simulacao.valorBonus)}</span>` : ""}</td>
           <td><span class="pill ${atingida ? "ok" : "wait"}">${atingida ? "Atingida" : "Falta atingir"}</span></td>
         `;
-
-        body.appendChild(tr);
+        corpo.appendChild(tr);
       });
-
-      salvarEstadoFormulario();
     }
 
-    function abrirAba(idAba, botao) {
-      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById(idAba).classList.add('active');
-      botao.classList.add('active');
-    }
+    function montarTabelaLancamentos(dados) {
+      const corpo = document.getElementById("tabelaLancamentos");
+      const vazio = document.getElementById("vazioLancamentos");
+      corpo.innerHTML = "";
 
-    function inicializarMesFiltro() {
-      const hoje = new Date();
-      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-      const ano = hoje.getFullYear();
-      const mesAnoStr = `${ano}-${mes}`;
-      
-      document.getElementById("historicoMesForm").value = mesAnoStr;
-      document.getElementById("mesFiltro").value = `${ano}-${mes}`;
-      document.getElementById("vendaData").value = hoje.toISOString().split("T")[0];
-    }
+      document.getElementById("resumoLancamentos").textContent =
+        `${dados.lancamentos.length} venda(s) | total ${CRM.moeda(dados.vendasLancadas)}`;
 
-    function carregarTodasVendas() {
-      try {
-        const bruto = localStorage.getItem(VENDAS_DB_KEY);
-        return bruto ? JSON.parse(bruto) : [];
-      } catch (e) { return []; }
-    }
+      vazio.style.display = dados.lancamentos.length === 0 ? "block" : "none";
 
-    function salvarTodasVendas(vendas) {
-      localStorage.setItem(VENDAS_DB_KEY, JSON.stringify(vendas));
-    }
-
-    function carregarHistoricoManual() {
-      try {
-        const bruto = localStorage.getItem(HISTORICO_MANUAL_KEY);
-        return bruto ? JSON.parse(bruto) : {};
-      } catch (e) { return {}; }
-    }
-
-    function salvarHistoricoManualLocal(dados) {
-      localStorage.setItem(HISTORICO_MANUAL_KEY, JSON.stringify(dados));
-    }
-
-    function salvarHistoricoManual() {
-      const mesAno = document.getElementById("historicoMesForm").value;
-      const valor = obterValorCampoMoeda("historicoValorForm");
-
-      if (!mesAno || valor <= 0) {
-        alert("Preencha o mês/ano e um valor maior que zero.");
-        return;
-      }
-
-      const historico = carregarHistoricoManual();
-      historico[mesAno] = valor;
-      salvarHistoricoManualLocal(historico);
-
-      document.getElementById("historicoValorForm").value = "";
-      alert("Histórico salvo com sucesso!");
-      atualizarVisaoVendas();
-    }
-
-    function excluirHistoricoManual(mesAno) {
-      if (!confirm(`Remover o valor manual de ${mesAno}? Ele voltará a exibir a soma dos dias.`)) return;
-      const historico = carregarHistoricoManual();
-      delete historico[mesAno];
-      salvarHistoricoManualLocal(historico);
-      atualizarVisaoVendas();
-    }
-
-    function salvarVenda() {
-      const dataStr = document.getElementById("vendaData").value;
-      const valor = obterValorCampoMoeda("vendaValor");
-
-      if (!dataStr || valor <= 0) {
-        alert("Preencha data e um valor maior que zero.");
-        return;
-      }
-
-      const vendas = carregarTodasVendas();
-      vendas.push({
-        id: Date.now().toString(),
-        data: dataStr,
-        valor: valor
-      });
-      
-      salvarTodasVendas(vendas);
-      document.getElementById("vendaValor").value = "";
-      
-      atualizarVisaoVendas();
-    }
-
-    function excluirVenda(id) {
-      if (!confirm("Excluir esta venda?")) return;
-      let vendas = carregarTodasVendas();
-      vendas = vendas.filter(v => v.id !== id);
-      salvarTodasVendas(vendas);
-      atualizarVisaoVendas();
-    }
-
-    function alterarMesReferencia() {
-      atualizarVisaoVendas();
-    }
-
-    function atualizarVisaoVendas() {
-      const vendas = carregarTodasVendas();
-      const mesAnoFiltro = document.getElementById("mesFiltro").value; // YYYY-MM
-      
-      if (!mesAnoFiltro) return;
-
-      let totalMes = 0;
-      const lista = document.getElementById("listaVendas");
-      lista.innerHTML = "";
-
-      const vendasFiltradas = vendas.filter(v => v.data.startsWith(mesAnoFiltro));
-      vendasFiltradas.sort((a, b) => new Date(b.data) - new Date(a.data));
-
-      if (vendasFiltradas.length === 0) {
-        lista.innerHTML = "<div style='text-align:center;color:#64748b;padding:10px;'>Nenhuma venda registrada neste mês.</div>";
-      } else {
-        vendasFiltradas.forEach(v => {
-          totalMes += v.valor;
-          const div = document.createElement("div");
-          div.className = "venda-card";
-          
-          const dataLocal = v.data.split("-").reverse().join("/");
-
-          div.innerHTML = `
-            <div class="venda-info">
-              <span class="venda-data">${dataLocal}</span>
-              <span class="venda-desc">Venda do Dia</span>
-            </div>
-            <div style="display:flex;align-items:center;">
-              <span class="venda-valor">${formatarMoeda(v.valor)}</span>
-              <button class="btn-delete" onclick="excluirVenda('${v.id}')">Excluir</button>
-            </div>
-          `;
-          lista.appendChild(div);
-        });
-      }
-
-      document.getElementById("vendasTotalMes").textContent = formatarMoeda(totalMes);
-
-      // Sincronizar Faturamento
-      const hoje = new Date();
-      const mesAtualStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-      
-      const inputFaturamento = document.getElementById("faturamentoAtual");
-      if (mesAnoFiltro === mesAtualStr) {
-        if(inputFaturamento) {
-          inputFaturamento.value = formatarNumeroBR(totalMes);
-          inputFaturamento.readOnly = true;
-          inputFaturamento.title = "Calculado automaticamente pelas vendas do mês.";
-        }
-      } else {
-        if(inputFaturamento) {
-          inputFaturamento.readOnly = false;
-          inputFaturamento.title = "";
-        }
-      }
-
-      renderizarHistorico(vendas);
-      // Recalcular metas após atualizar
-      calcularMetas();
-    }
-
-    function carregarHistoricoMetas() {
-      try {
-        const bruto = localStorage.getItem(HISTORICO_METAS_KEY);
-        return bruto ? JSON.parse(bruto) : {};
-      } catch (e) { return {}; }
-    }
-
-    function salvarMetaMes(mesAno, inputElement) {
-      const valorNum = Math.max(0, normalizarMoedaParaNumero(inputElement.value));
-      const metas = carregarHistoricoMetas();
-      
-      if (valorNum <= 0) {
-        delete metas[mesAno];
-      } else {
-        metas[mesAno] = valorNum;
-      }
-      
-      localStorage.setItem(HISTORICO_METAS_KEY, JSON.stringify(metas));
-      atualizarVisaoVendas();
-    }
-
-    function renderizarHistorico(vendas) {
-      const historicoBody = document.getElementById("historicoBody");
-      if(!historicoBody) return;
-      historicoBody.innerHTML = "";
-
-      const manual = carregarHistoricoManual();
-      const metasMes = carregarHistoricoMetas();
-      const agrupado = {};
-      
-      vendas.forEach(v => {
-        const mesAno = v.data.substring(0, 7);
-        if (!agrupado[mesAno]) agrupado[mesAno] = { source: 'auto', total: 0 };
-        agrupado[mesAno].total += v.valor;
-      });
-
-      // Mesclar manuais
-      for (const [mesAno, valorManual] of Object.entries(manual)) {
-        agrupado[mesAno] = { source: 'manual', total: valorManual };
-      }
-
-      const meses = Object.keys(agrupado).sort().reverse();
-
-      if (meses.length === 0) {
-        historicoBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Nenhum histórico disponível.</td></tr>";
-        return;
-      }
-
-      meses.forEach(mesAno => {
-        const [ano, mes] = mesAno.split("-");
-        const dataObj = new Date(ano, mes - 1);
-        const nomeMes = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-        
-        const isManual = agrupado[mesAno].source === 'manual';
-        const sourceBadge = isManual ? `<span class="badge warn" style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;">Manual</span>` : '';
-        const actionBtn = isManual ? `<button class="btn-delete" style="margin-left:10px;padding:4px 8px;" onclick="excluirHistoricoManual('${mesAno}')">Limpar</button>` : '';
-
-        const metaValue = metasMes[mesAno] || 0;
-        const atingiuMeta = metaValue > 0 && agrupado[mesAno].total >= metaValue;
-        const colorClass = metaValue > 0 ? (atingiuMeta ? '#16a34a' : '#dc2626') : '#166534';
-
+      dados.lancamentos.forEach((item) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td style="text-transform: capitalize; vertical-align: middle;">${nomeMes} ${sourceBadge}</td>
-          <td class="historico-total" style="vertical-align: middle; color: ${colorClass}; border-bottom: 1px solid #f1f5f9;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              ${formatarMoeda(agrupado[mesAno].total)}
-              ${actionBtn}
-            </div>
-          </td>
-          <td style="vertical-align: middle; border-bottom: 1px solid #f1f5f9;">
-            <input type="text" value="${metaValue > 0 ? formatarNumeroBR(metaValue) : ''}" 
-                   placeholder="Definir..."
-                   oninput="aplicarMascaraMoeda(this)" 
-                   onblur="salvarMetaMes('${mesAno}', this)" 
-                   style="width:100px; padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right; font-size:14px; outline:none; background: #f8fafc;">
-          </td>
-        `;
-        historicoBody.appendChild(tr);
+
+        const tdData = document.createElement("td");
+        tdData.textContent = CRM.formatarDataBR(item.data);
+
+        const tdValor = document.createElement("td");
+        tdValor.innerHTML = `<strong>${CRM.moeda(item.valor)}</strong>`;
+
+        const tdPecas = document.createElement("td");
+        tdPecas.textContent = item.pecas || "-";
+
+        const tdObs = document.createElement("td");
+        tdObs.textContent = item.obs || "-";
+        tdObs.style.whiteSpace = "normal";
+
+        const tdAcao = document.createElement("td");
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "btn btn-perigo btn-mini";
+        botao.textContent = "Excluir";
+        botao.addEventListener("click", () => excluirLancamento(item.id));
+        tdAcao.appendChild(botao);
+
+        tr.appendChild(tdData);
+        tr.appendChild(tdValor);
+        tr.appendChild(tdPecas);
+        tr.appendChild(tdObs);
+        tr.appendChild(tdAcao);
+        corpo.appendChild(tr);
       });
     }
-
-    document.getElementById("diasRestantes").addEventListener("input", () => {
-      calcularMetas();
-      salvarEstadoFormulario();
-    });
-    configurarCamposMoeda();
-    inicializarMesFiltro();
-    
-    // Isto chamará calcularMetas via atualizarVisaoVendas
-    aplicarEstadoFormulario();
-    atualizarInterfaceObjetivoFixo();
-    atualizarBannerPlano();
-    atualizarVisaoVendas();
-    preencherDiasAutomatico();
   </script>
 </body>
 </html>

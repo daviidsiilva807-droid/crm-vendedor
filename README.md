@@ -1,81 +1,90 @@
 # controledesecao
-controlar e melhorar a vida do vendedor.
 
+CRM do vendedor: metas, comissao, calendario de trabalho, clientes e marketing.
 
-O dashboard permite ativar e desativar vendedores por pagamento e a area de vendas mostra o tempo restante da assinatura e a comissao estimada por venda.
+O frontend e 100% estatico e publicado no GitHub Pages. Login, sessao, cadastro
+de vendedores e todos os dados do dia a dia funcionam no navegador com
+`localStorage`.
 
-Na area administrativa, o usuario admin pode cadastrar, consultar login e senha e excluir vendedores.
+Login administrador padrao: `daviidsiilva807`
 
-Este projeto é 100% estático no frontend para publicação no GitHub Pages.
-Login, sessão e cadastro de vendedores funcionam no navegador usando `localStorage`.
+## Telas
 
-Login administrador padrão: `daviidsiilva807`
+Menu lateral fixo (`app-shell.css` + `app-shell.js`) em todas as telas internas,
+na identidade laranja/branco:
 
-## Como publicar no GitHub Pages:
-- envie os arquivos para um repositorio no GitHub
-- em `Settings > Pages`, escolha a branch (geralmente `main`) e a pasta raiz (`/root`)
-- aguarde o deploy e acesse a URL gerada pelo GitHub Pages
+- `dashboard.html`: vendas do mes, comissao acumulada, vendas dos ultimos 3 dias,
+  grafico de linha com meta e ritmo ideal, registro rapido de venda e frase do dia
+- `calendario.html`: escala de trabalho, folgas, ferias, eventos e faltas
+- `agent.html`: agente de marketing com IA (usa o proxy do `server.js`)
+- `marketing.html`: gerador de mensagens prontas para WhatsApp/Instagram, sem IA
+- `vendas.html`: lancamento de vendas por dia, meta estabelecida x meta pessoal,
+  historico mensal e tabela de comissao
+- `secao.html`, `vestuario.html`, `tenis.html`, `acessorios.html`: conferencia de secao
+- `clientes.html`: clientes, reservas e avisos
+- `admin.html`: painel restrito ao administrador
 
-**Observação**: os dados salvos (usuarios, sessoes e rascunhos) ficam apenas no navegador/dispositivo de cada usuario.
+## Metas e comissao (`app-data.js`)
 
-## Agente de Marketing com ChatGPT (PROXY BACKEND)
+- meta estabelecida padrao: R$ 84.000,00
+- meta pessoal padrao: R$ 96.000,00
+- comissao pela tabela de faixas: 40 mil = 0,5%, 46 mil = 1%, 50 mil = 1,2%,
+  56 mil = 1,5%, 64 mil = 2%, 72 mil = 2,25%, 80 mil = 2,5%, 88 mil = 2,6%,
+  96 mil = 2,7%, 104 mil = 2,8%, 112 mil = 2,9%
+- bonificacao de 0,6% sobre o faturamento ao atingir a meta estabelecida,
+  somada ao percentual da faixa
+- os valores podem ser alterados em `vendas.html` > aba `Configuracao de metas`
 
-O agente de marketing agora usa um proxy backend seguro para proteger sua chave da OpenAI API.
+Planos de assinatura: 30 dias por R$ 20,00 e 90 dias por R$ 50,00. Na area
+administrativa o admin cadastra, ativa, desativa e exclui vendedores.
 
-### Configuração Local (Desenvolvimento)
+## Como publicar no GitHub Pages
 
-1. **Instale as dependências**:
-   ```bash
-   npm install
-   ```
+- envie os arquivos para o repositorio no GitHub
+- em `Settings > Pages`, escolha a branch (`main`) e a pasta raiz (`/root`)
+- aguarde o deploy e acesse a URL gerada
 
-2. **Configure o arquivo `.env`**:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edite o `.env` e adicione sua chave da OpenAI:
+**Observacao**: os dados salvos (usuarios, sessoes, vendas, agenda e rascunhos)
+ficam apenas no navegador de cada dispositivo.
+
+## Agente de Marketing com ChatGPT (proxy backend)
+
+O agente de marketing usa um proxy backend para proteger a chave da OpenAI.
+
+1. Instale as dependencias: `npm install`
+2. Copie o `.env.example` para `.env` e preencha:
    ```
    OPENAI_API_KEY=sk-proj-sua-chave-aqui
    OPENAI_MODEL=gpt-5.5
    PORT=3000
    ```
+3. Inicie o proxy: `npm start` (fica em `http://localhost:3000`)
+4. Abra `agent.html`, faca login como admin, marque "Usar ChatGPT na geracao"
+   e gere o conteudo
 
-3. **Inicie o servidor proxy**:
-   ```bash
-   npm start
-   ```
-   
-   O proxy estará disponível em `http://localhost:3000`
+Em producao o proxy pode ir para Vercel, Cloudflare Workers, AWS Lambda ou um
+VPS. Guarde sempre a `OPENAI_API_KEY` em variavel de ambiente do servidor,
+nunca no frontend.
 
-4. **Acesse o agente**:
-   - Abra `http://localhost:5500/agent.html` (ou use Live Server do VS Code)
-   - Faça login como admin (`daviidsiilva807`)
-   - Marque "Usar ChatGPT na geração"
-   - Gere o conteúdo normalmente
+Como funciona: o frontend envia os dados da campanha (sem a chave) para
+`/api/openai-proxy`, o servidor injeta a chave e chama a `api.openai.com`, e a
+resposta volta para o cliente. A chave nunca sai do servidor.
 
-### Configuração em Produção
+Problemas comuns:
+- "Erro ao conectar ao proxy": o servidor nao esta rodando (`npm start`)
+- "OPENAI_API_KEY nao configurada": falta a chave no `.env`
+- Chave expirou: gere outra em https://platform.openai.com/account/api-keys
 
-Para publicar em produção, você pode usar:
+## Backend opcional de login centralizado (`server-auth.js`)
 
-- **Vercel**: Crie um `api/openai-proxy.js` e implante gratuitamente
-- **Cloudflare Workers**: Deploy sem servidor com proteção de API key
-- **AWS Lambda + API Gateway**: Serverless com segurança de nível enterprise
-- **Seu próprio servidor**: Use `npm start` em um VPS/servidor próprio
+Alternativa para quem quiser a mesma base de logins em varios aparelhos, em vez
+do login por navegador. Nao e usado pelo site publicado.
 
-**Importante**: Sempre armazene `OPENAI_API_KEY` em variáveis de ambiente do servidor, nunca no código-fonte ou frontend.
-
-### Como funciona
-
-1. O frontend envia dados da campanha (SEM a chave de API) para `/api/openai-proxy`
-2. O servidor Node.js injeta a chave da OpenAI (armazenada em `.env`)
-3. O servidor faz o request autenticado para `api.openai.com`
-4. A resposta é devolvida ao cliente
-5. A chave nunca sai do servidor - fica protegida
-
-### Troubleshooting
-
-- **"Erro ao conectar ao proxy"**: Certifique-se de que o servidor está rodando (`npm start`)
-- **"OPENAI_API_KEY não configurada"**: Verifique se `.env` tem a chave
-- **CORS error**: O proxy inclui CORS, mas verifique a origem no servidor
-- **Chave expirou**: Crie uma nova chave em https://platform.openai.com/account/api-keys
+- `node server-auth.js` e abra `http://localhost:3000`
+- sem credenciais AWS validas, ele grava em `data/state.json` (modo local);
+  com credenciais reais, usa DynamoDB
+- defina `ADMIN_LOGIN` e `ADMIN_SENHA` no `.env`; sem `ADMIN_SENHA`, o servidor
+  gera uma senha aleatoria no primeiro uso e mostra no console
+- requer `npm install aws-sdk`
+- para usar esse modo, o frontend precisa da versao de `auth-db.js` que fala com
+  a API, e `api/[...path].js` publica a mesma API na Vercel

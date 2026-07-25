@@ -1,41 +1,213 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <link rel="stylesheet" href="style.css">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#0f766e">
+  <meta name="theme-color" content="#f97316">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Controle">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="img/icon-192.png">
-  <title>Entrada - Controle de seção</title>
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Entrar - Controle de Secao</title>
+  <style>
+    body {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      min-height: 100vh;
+    }
+
+    .lado-marca {
+      background: linear-gradient(150deg, var(--laranja) 0%, var(--laranja-escuro) 55%, var(--laranja-forte) 100%);
+      color: #fff;
+      padding: 56px 52px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lado-marca::after {
+      content: "";
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.09);
+      right: -140px;
+      bottom: -160px;
+    }
+
+    .marca-logo {
+      width: 62px;
+      height: 62px;
+      border-radius: 18px;
+      background: #fff;
+      color: var(--laranja-escuro);
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      font-weight: 800;
+    }
+
+    .lado-marca h1 {
+      margin: 0;
+      color: #fff;
+      font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      max-width: 460px;
+    }
+
+    .lado-marca p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.6;
+      opacity: 0.94;
+      max-width: 440px;
+    }
+
+    .marca-itens {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .marca-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14.5px;
+      font-weight: 600;
+    }
+
+    .marca-item span {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.2);
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+    }
+
+    .lado-form {
+      display: grid;
+      place-items: center;
+      padding: 40px 24px;
+      background: #fff;
+    }
+
+    .caixa-login {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .caixa-login h2 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .caixa-login .sub {
+      margin: 0 0 26px;
+      color: var(--texto-medio);
+      font-size: 14px;
+    }
+
+    .caixa-login .campo { margin-bottom: 14px; }
+
+    .btn-entrar {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 8px;
+      background: var(--laranja);
+      color: #fff;
+      border: none;
+      border-radius: var(--raio-sm);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-entrar:hover { background: var(--laranja-escuro); }
+
+    .rodape-login {
+      margin-top: 22px;
+      font-size: 12.5px;
+      color: var(--texto-fraco);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      body { grid-template-columns: 1fr; }
+      .lado-marca { padding: 34px 24px; gap: 18px; }
+      .lado-marca::after { display: none; }
+      .marca-itens { display: none; }
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Bem-vindo ao Controle de seção</h1>
-    <h2>Entrada do Sistema</h2>
-    <p>Depois de entrar, você acessa o dashboard com vendas, seções e o calendário de trabalho para marcar as folgas do mês.</p>
+  <section class="lado-marca">
+    <div class="marca-logo">CV</div>
+    <h1>Controle de Secao</h1>
+    <p>O CRM do vendedor: metas, comissao, calendario de trabalho, clientes e marketing em um so lugar.</p>
 
-    <input type="text" id="login" placeholder="Digite seu login">
-    <input type="password" id="senha" placeholder="Digite sua senha">
-    <button type="button" onclick="entrar()">Entrar</button>
-  </div>
+    <div class="marca-itens">
+      <div class="marca-item"><span>&#128202;</span>Dashboard com meta, comissao e grafico de evolucao</div>
+      <div class="marca-item"><span>&#128197;</span>Calendario de trabalho com escala e folgas</div>
+      <div class="marca-item"><span>&#128226;</span>Agente de marketing com mensagens prontas</div>
+      <div class="marca-item"><span>&#128101;</span>Clientes, reservas e conferencia de secao</div>
+    </div>
+  </section>
 
+  <section class="lado-form">
+    <div class="caixa-login">
+      <h2>Entrar no sistema</h2>
+      <p class="sub">Use o login e a senha fornecidos pelo administrador.</p>
+
+      <div class="campo">
+        <label for="login">Login</label>
+        <input id="login" type="text" placeholder="Digite seu login" autocomplete="username">
+      </div>
+
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" placeholder="Digite sua senha" autocomplete="current-password">
+      </div>
+
+      <button class="btn-entrar" type="button" onclick="entrar()">Entrar</button>
+      <div id="statusLogin" class="status"></div>
+
+      <div class="rodape-login">
+        Problemas para acessar ou assinatura vencida?<br>
+        Fale com o administrador para liberar seu acesso.
+      </div>
+    </div>
+  </section>
+
+  <script src="app-config.js"></script>
   <script src="transitions.js"></script>
   <script src="auth-db.js"></script>
   <script>
     AuthDB.garantirAdminPadrao();
 
-    const sessaoAtual = AuthDB.obterSessao();
-    if (sessaoAtual) {
-      document.body.classList.add("page-exit");
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 350);
+    if (AuthDB.obterSessao()) {
+      window.location.href = "dashboard.html";
+    }
+
+    function mostrarErro(mensagem) {
+      const status = document.getElementById("statusLogin");
+      status.textContent = mensagem;
+      status.className = "status error";
     }
 
     function entrar() {
@@ -43,22 +215,26 @@
       const senha = document.getElementById("senha").value;
 
       if (login === "" || senha.trim() === "") {
-        alert("Por favor, preencha login e senha.");
+        mostrarErro("Preencha login e senha.");
         return;
       }
 
       const resultado = AuthDB.autenticar(login, senha);
       if (!resultado.ok) {
-        alert(resultado.mensagem);
+        mostrarErro(resultado.mensagem);
         return;
       }
 
-      document.body.classList.add("page-exit");
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 350);
+      window.location.href = "dashboard.html";
     }
+
+    ["login", "senha"].forEach((id) => {
+      document.getElementById(id).addEventListener("keydown", (evento) => {
+        if (evento.key === "Enter") {
+          entrar();
+        }
+      });
+    });
   </script>
 </body>
 </html>
-

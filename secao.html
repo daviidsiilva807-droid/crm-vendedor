@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Secao - Controle de Secao</title>
+  <style>
+    .secao-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .secao-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 30px rgba(16, 24, 40, 0.1);
+    }
+
+    .secao-icone {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--laranja-suave);
+      border: 1px solid var(--laranja-borda);
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+    }
+
+    .secao-card h3 { margin: 0; font-size: 16px; }
+    .secao-card p { margin: 0; font-size: 13.5px; color: var(--texto-medio); line-height: 1.55; }
+
+    .passo {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px dashed #e9ebef;
+      font-size: 13.5px;
+      color: var(--texto-medio);
+    }
+
+    .passo:last-child { border-bottom: none; }
+
+    .passo b {
+      flex: 0 0 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--laranja);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 12.5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Secao</h1>
+    <p>Escolha o tipo de produto para registrar entrada, conferir grade e acompanhar o que ja foi finalizado.</p>
+  </div>
+
+  <div class="grid grid-3" style="margin-bottom:16px">
+    <a class="card secao-card" href="vestuario.html">
+      <div class="secao-icone">&#128085;</div>
+      <h3>Vestuario</h3>
+      <p>Camisetas, calcas, jaquetas e conjuntos. Conferencia por tamanho P ao GG.</p>
+      <span class="pill laranja">Abrir conferencia</span>
+    </a>
+
+    <a class="card secao-card" href="tenis.html">
+      <div class="secao-icone">&#128095;</div>
+      <h3>Tenis</h3>
+      <p>Conferencia por numeracao do 37 ao 43, com comparativo entre secao e estoque.</p>
+      <span class="pill laranja">Abrir conferencia</span>
+    </a>
+
+    <a class="card secao-card" href="acessorios.html">
+      <div class="secao-icone">&#128717;</div>
+      <h3>Acessorios</h3>
+      <p>Bones, meias, mochilas e bolsas. Controle de quantidade por item.</p>
+      <span class="pill laranja">Abrir conferencia</span>
+    </a>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-titulo"><h3>Como conferir sua secao</h3></div>
+      <div class="passo"><b>1</b><span>Digite o codigo do produto e adicione a lista de conferencia.</span></div>
+      <div class="passo"><b>2</b><span>Preencha a quantidade que esta na secao e a quantidade no estoque.</span></div>
+      <div class="passo"><b>3</b><span>Campos em vermelho indicam grade faltando na secao: reponha antes de abrir a loja.</span></div>
+      <div class="passo"><b>4</b><span>Marque "Confirmar OK" para mover o produto para a lista de finalizados.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo"><h3>Boas praticas</h3></div>
+      <div class="passo"><b>&#9733;</b><span>Confira a grade completa antes da abertura e depois do almoco.</span></div>
+      <div class="passo"><b>&#9733;</b><span>Anote nas observacoes o que pediu ao estoque, para cobrar depois.</span></div>
+      <div class="passo"><b>&#9733;</b><span>Produto sem grade na secao nao vende: priorize reposicao dos campeoes de venda.</span></div>
+      <div class="passo"><b>&#9733;</b><span>Ao encontrar peca reservada, registre em Clientes para nao perder a venda.</span></div>
+    </div>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="app-shell.js"></script>
+  <script>
+    AuthDB.exigirLogin();
+  </script>
+</body>
+</html>
