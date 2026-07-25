@@ -595,8 +595,38 @@
     return { ok: true, mensagem: total > 0 ? "Historico salvo." : "Valor manual removido." };
   }
 
+  /* Meta especifica de cada mes (historico). Sem valor salvo usa a meta atual. */
+  function obterMetasMensais() {
+    const dados = lerJSON(chave("metasMensais"), {});
+    return dados && typeof dados === "object" && !Array.isArray(dados) ? dados : {};
+  }
+
+  function salvarMetaMensal(competencia, valor) {
+    const metas = obterMetasMensais();
+    const meta = Math.max(0, numero(valor));
+
+    if (!/^\d{4}-\d{2}$/.test(String(competencia || ""))) {
+      return { ok: false, mensagem: "Informe um mes valido." };
+    }
+
+    if (meta <= 0) {
+      delete metas[competencia];
+    } else {
+      metas[competencia] = meta;
+    }
+
+    gravarJSON(chave("metasMensais"), metas);
+    return { ok: true, mensagem: meta > 0 ? "Meta do mes salva." : "Meta do mes removida." };
+  }
+
+  function metaDoMes(competencia) {
+    const salva = numero(obterMetasMensais()[competencia]);
+    return salva > 0 ? salva : obterConfig().metaEstabelecida;
+  }
+
   function historicoMensal() {
     const manual = obterHistoricoManual();
+    const metas = obterMetasMensais();
     const porMes = {};
 
     listarLancamentos().forEach((item) => {
@@ -604,7 +634,9 @@
       porMes[competencia] = numero(porMes[competencia]) + item.valor;
     });
 
-    const meses = new Set(Object.keys(porMes).concat(Object.keys(manual)));
+    const meses = new Set(
+      Object.keys(porMes).concat(Object.keys(manual)).concat(Object.keys(metas))
+    );
     const config = obterConfig();
 
     return Array.from(meses)
@@ -614,15 +646,24 @@
         const lancado = numero(porMes[competencia]);
         const valorManual = numero(manual[competencia]);
         const total = valorManual > 0 ? valorManual : lancado;
-        const comissao = calcularComissaoDetalhada(total, config);
+        const metaSalva = numero(metas[competencia]);
+        const meta = metaSalva > 0 ? metaSalva : config.metaEstabelecida;
+
+        /* A bonificacao daquele mes vale sobre a meta que existia no mes. */
+        const comissao = calcularComissaoDetalhada(total, Object.assign({}, config, { metaEstabelecida: meta }));
 
         return {
           competencia,
           lancado,
           manual: valorManual,
           total,
+          meta,
+          metaPropria: metaSalva > 0,
+          progresso: meta > 0 ? (total / meta) * 100 : 0,
+          falta: Math.max(0, meta - total),
+          sobra: Math.max(0, total - meta),
           comissao,
-          atingiuMeta: config.metaEstabelecida > 0 && total >= config.metaEstabelecida
+          atingiuMeta: meta > 0 && total >= meta
         };
       });
   }
@@ -702,6 +743,9 @@
     fraseDoDia,
     obterHistoricoManual,
     salvarHistoricoManual,
+    obterMetasMensais,
+    salvarMetaMensal,
+    metaDoMes,
     historicoMensal,
     migrarDadosAntigos
   };

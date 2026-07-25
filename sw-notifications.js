@@ -1,11 +1,19 @@
 // Service Worker para gerenciar notificações de reservas
-const CACHE_NAME = 'controle-secao-v5';
+const CACHE_NAME = 'controle-secao-v6';
 const urlsCache = [
   '/',
   '/index.html',
   '/dashboard.html',
+  '/vendas.html',
+  '/calendario.html',
   '/agent.html',
+  '/marketing.html',
+  '/secao.html',
   '/clientes.html',
+  '/admin.html',
+  '/app-shell.css',
+  '/app-shell.js',
+  '/app-data.js',
   '/style.css',
   '/transitions.js',
   '/auth-db.js',
@@ -43,33 +51,43 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Interceptar requisições
+// Interceptar requisicoes: rede primeiro, cache so como reserva.
+// Assim uma atualizacao do site aparece na hora, e o app continua
+// abrindo offline com a ultima versao que foi baixada.
 self.addEventListener('fetch', (event) => {
-  if (event.request.method === 'GET') {
-    event.respondWith(
-      caches.match(event.request).then((response) => {
-        if (response) {
-          return response;
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const copia = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copia));
         }
 
-        return fetch(event.request).then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
+        return response;
+      })
+      .catch(() =>
+        caches.match(event.request).then((cacheado) => {
+          if (cacheado) {
+            return cacheado;
           }
 
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
 
-          return response;
-        });
-      }).catch(() => {
-        // Fallback para página offline se necessário
-        return new Response('Offline', { status: 503 });
-      })
-    );
-  }
+          return new Response('Offline', { status: 503 });
+        })
+      )
+  );
 });
 
 // Receber mensagens do cliente para gerenciar notificações
