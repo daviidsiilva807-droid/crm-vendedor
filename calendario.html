@@ -125,6 +125,34 @@
 
     .item-agenda:last-child { border-bottom: none; }
 
+    /* Layout: calendario largo + coluna lateral que pode ser recolhida. */
+    .grid-calendario { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); }
+    .grid-calendario.foco-calendario { grid-template-columns: minmax(0, 1fr); }
+
+    .painel-colapsavel .card-titulo { margin-bottom: 0; }
+    .painel-colapsavel .card-corpo { margin-top: 14px; }
+    .painel-colapsavel.minimizado .card-corpo { display: none; }
+
+    .resumo-minimizado {
+      display: none;
+      margin-top: 10px;
+      font-size: 12.5px;
+      color: var(--texto-medio);
+    }
+
+    .painel-colapsavel.minimizado .resumo-minimizado { display: block; }
+
+    .btn-minimizar {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 900px) {
+      .grid-calendario { grid-template-columns: minmax(0, 1fr); }
+    }
+
     @media (max-width: 720px) {
       .cal-dia { min-height: 68px; padding: 6px; }
       .cal-dia .marca { font-size: 9px; }
@@ -137,7 +165,7 @@
     <p>Monte sua escala do mes: marque dias de trabalho, folgas, ferias, eventos e faltas. Clique em um dia para editar. As vendas registradas aparecem no proprio calendario.</p>
   </div>
 
-  <div class="grid grid-2" style="margin-bottom:16px; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr)">
+  <div id="gridCalendario" class="grid grid-2 grid-calendario" style="margin-bottom:16px">
     <div class="card">
       <div class="cal-topo">
         <button class="btn btn-neutro btn-mini" type="button" onclick="mudarMes(-1)">&#8592; Anterior</button>
@@ -155,52 +183,66 @@
     </div>
 
     <div>
-      <div class="card" style="margin-bottom:16px">
+      <div id="painelEditor" class="card painel-colapsavel" style="margin-bottom:16px">
         <div class="card-titulo">
-          <h3>Editar dia</h3>
-          <small id="diaSelecionado">Nenhum dia selecionado</small>
+          <h3>Editar dia (folga, trabalho, ferias)</h3>
+          <button id="btnMinimizarEditor" class="btn btn-neutro btn-mini btn-minimizar" type="button" onclick="alternarEditor()">Minimizar</button>
         </div>
 
-        <div class="campo" style="margin-bottom:12px">
-          <label for="tipoDia">Tipo do dia</label>
-          <select id="tipoDia">
-            <option value="">Sem marcacao</option>
-            <option value="trabalho">Trabalho</option>
-            <option value="folga">Folga</option>
-            <option value="ferias">Ferias</option>
-            <option value="evento">Evento / campanha</option>
-            <option value="falta">Falta / atestado</option>
-          </select>
-        </div>
+        <div id="resumoEditorMin" class="resumo-minimizado">-</div>
 
-        <div class="campo" style="margin-bottom:12px">
-          <label for="turnoDia">Turno</label>
-          <select id="turnoDia">
-            <option value="integral">Integral</option>
-            <option value="manha">Manha</option>
-            <option value="tarde">Tarde</option>
-            <option value="noite">Noite</option>
-          </select>
-        </div>
+        <div class="card-corpo">
+          <small id="diaSelecionado" style="display:block; color:var(--texto-fraco); margin-bottom:12px">Nenhum dia selecionado</small>
 
-        <div class="campo" style="margin-bottom:12px">
-          <label for="notaDia">Anotacao</label>
-          <input id="notaDia" type="text" maxlength="160" placeholder="Ex: inventario, treinamento, folga trocada">
-        </div>
+          <div class="campo" style="margin-bottom:12px">
+            <label for="tipoDia">Tipo do dia</label>
+            <select id="tipoDia">
+              <option value="">Sem marcacao</option>
+              <option value="trabalho">Trabalho</option>
+              <option value="folga">Folga</option>
+              <option value="ferias">Ferias</option>
+              <option value="evento">Evento / campanha</option>
+              <option value="falta">Falta / atestado</option>
+            </select>
+          </div>
 
-        <div class="acoes">
-          <button class="btn btn-primario" type="button" onclick="salvarDia()">Salvar dia</button>
-          <button class="btn btn-perigo" type="button" onclick="limparDia()">Remover marcacao</button>
+          <div class="campo" style="margin-bottom:12px">
+            <label for="turnoDia">Turno</label>
+            <select id="turnoDia">
+              <option value="integral">Integral</option>
+              <option value="manha">Manha</option>
+              <option value="tarde">Tarde</option>
+              <option value="noite">Noite</option>
+            </select>
+          </div>
+
+          <div class="campo" style="margin-bottom:12px">
+            <label for="notaDia">Anotacao</label>
+            <input id="notaDia" type="text" maxlength="160" placeholder="Ex: inventario, treinamento, folga trocada">
+          </div>
+
+          <div class="acoes">
+            <button class="btn btn-primario" type="button" onclick="salvarDia()">Salvar dia</button>
+            <button class="btn btn-perigo" type="button" onclick="limparDia()">Remover marcacao</button>
+          </div>
+          <div id="statusDia" class="status"></div>
         </div>
-        <div id="statusDia" class="status"></div>
       </div>
 
-      <div class="card">
-        <div class="card-titulo"><h3>Resumo do mes</h3></div>
-        <div id="resumoMes"></div>
+      <div id="painelResumo" class="card painel-colapsavel">
+        <div class="card-titulo">
+          <h3>Resumo do mes</h3>
+          <button id="btnMinimizarResumo" class="btn btn-neutro btn-mini btn-minimizar" type="button" onclick="alternarResumo()">Minimizar</button>
+        </div>
 
-        <div class="card-titulo" style="margin:18px 0 8px"><h3>Proximos compromissos</h3></div>
-        <div id="proximos"></div>
+        <div id="resumoPainelMin" class="resumo-minimizado">Toque em expandir para ver a contagem de dias.</div>
+
+        <div class="card-corpo">
+          <div id="resumoMes"></div>
+
+          <div class="card-titulo" style="margin:18px 0 8px"><h3>Proximos compromissos</h3></div>
+          <div id="proximos"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -228,9 +270,70 @@
     let mesExibido = CRM.competenciaAtual();
     let diaSelecionado = CRM.hojeISO();
 
+    const CHAVE_PAINEIS = "crm_calendario_paineis_v1";
+
     if (sessao) {
       montarLegenda();
+      restaurarPaineis();
       renderizar();
+    }
+
+    /* --------------------- Minimizar / expandir paineis -------------------- */
+
+    function lerPaineis() {
+      try {
+        const salvo = JSON.parse(localStorage.getItem(CHAVE_PAINEIS) || "{}");
+        return salvo && typeof salvo === "object" ? salvo : {};
+      } catch (erro) {
+        return {};
+      }
+    }
+
+    function gravarPaineis(estado) {
+      localStorage.setItem(CHAVE_PAINEIS, JSON.stringify(estado));
+    }
+
+    function restaurarPaineis() {
+      const estado = lerPaineis();
+      aplicarPainel("painelEditor", "btnMinimizarEditor", estado.editor === true);
+      aplicarPainel("painelResumo", "btnMinimizarResumo", estado.resumo === true);
+    }
+
+    function aplicarPainel(idPainel, idBotao, minimizado) {
+      const painel = document.getElementById(idPainel);
+      const botao = document.getElementById(idBotao);
+      painel.classList.toggle("minimizado", minimizado);
+      botao.textContent = minimizado ? "Expandir" : "Minimizar";
+      botao.className = `btn btn-mini btn-minimizar ${minimizado ? "btn-secundario" : "btn-neutro"}`;
+
+      const ambosFechados = document.getElementById("painelEditor").classList.contains("minimizado")
+        && document.getElementById("painelResumo").classList.contains("minimizado");
+      document.getElementById("gridCalendario").classList.toggle("foco-calendario", ambosFechados);
+    }
+
+    function alternarEditor() {
+      const estado = lerPaineis();
+      estado.editor = !document.getElementById("painelEditor").classList.contains("minimizado");
+      gravarPaineis(estado);
+      aplicarPainel("painelEditor", "btnMinimizarEditor", estado.editor);
+      atualizarResumoEditorMin();
+    }
+
+    function alternarResumo() {
+      const estado = lerPaineis();
+      estado.resumo = !document.getElementById("painelResumo").classList.contains("minimizado");
+      gravarPaineis(estado);
+      aplicarPainel("painelResumo", "btnMinimizarResumo", estado.resumo);
+    }
+
+    /* Com o editor fechado, a barra mostra o dia selecionado e o que ele tem. */
+    function atualizarResumoEditorMin() {
+      const info = CRM.obterDiaAgenda(diaSelecionado);
+      const marca = info
+        ? `${CRM.TIPOS_DIA[info.tipo].rotulo}${info.turno && info.turno !== "integral" ? ` (${info.turno})` : ""}`
+        : "sem marcacao";
+      document.getElementById("resumoEditorMin").innerHTML =
+        `<strong>${CRM.formatarDataBR(diaSelecionado)}</strong> - ${marca}. Toque em <strong>Expandir</strong> para editar.`;
     }
 
     function montarLegenda() {
@@ -319,6 +422,7 @@
       document.getElementById("tipoDia").value = info ? info.tipo : "";
       document.getElementById("turnoDia").value = info ? info.turno : "integral";
       document.getElementById("notaDia").value = info ? info.nota : "";
+      atualizarResumoEditorMin();
     }
 
     function salvarDia() {
@@ -388,6 +492,11 @@
           </div>
         `)
         .join("");
+
+      document.getElementById("resumoPainelMin").textContent = Object.keys(CRM.TIPOS_DIA)
+        .filter((chave) => dados.contagem[chave] > 0)
+        .map((chave) => `${dados.contagem[chave]} ${CRM.TIPOS_DIA[chave].rotulo.toLowerCase()}`)
+        .join(" | ") || "Nenhum dia marcado neste mes.";
 
       const proximos = document.getElementById("proximos");
       if (dados.proximos.length === 0) {

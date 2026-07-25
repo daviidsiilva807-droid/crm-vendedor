@@ -234,7 +234,7 @@
   <section id="abaHistorico" class="painel-tab">
     <div class="card" style="margin-bottom:16px">
       <div class="card-titulo">
-        <h3>Fechamento manual de um mes</h3>
+        <h3>Fechamento e meta de um mes</h3>
         <small>Use para meses antigos, sem lancamento dia a dia</small>
       </div>
       <div class="form-grid">
@@ -246,12 +246,36 @@
           <label for="histValor">Faturamento do mes (R$)</label>
           <input id="histValor" type="text" inputmode="decimal" value="0,00">
         </div>
+        <div class="campo">
+          <label for="histMeta">Meta daquele mes (R$)</label>
+          <input id="histMeta" type="text" inputmode="decimal" value="0,00">
+          <span class="dica">Deixe zero para usar a meta atual da configuracao</span>
+        </div>
       </div>
       <div class="acoes" style="margin-top:14px">
-        <button class="btn btn-primario" type="button" onclick="salvarHistorico()">Salvar fechamento</button>
+        <button class="btn btn-primario" type="button" onclick="salvarHistorico()">Salvar mes</button>
+        <button class="btn btn-neutro" type="button" onclick="carregarMesHistorico()">Carregar valores do mes</button>
       </div>
-      <p class="dica" style="margin-top:10px">O valor manual substitui a soma dos lancamentos daquele mes. Salve com zero para voltar a usar a soma.</p>
+      <p class="dica" style="margin-top:10px">O valor manual substitui a soma dos lancamentos daquele mes. Salve com zero para voltar a usar a soma. A meta salva aqui vale so para esse mes e define se ele foi batido ou nao.</p>
       <div id="statusHistorico" class="status"></div>
+    </div>
+
+    <div class="grid grid-3" style="margin-bottom:16px">
+      <article class="kpi verde">
+        <div class="kpi-label">Meses com meta batida</div>
+        <div id="kpiMesesBatidos" class="kpi-valor">0</div>
+        <div id="kpiMesesBatidosNota" class="kpi-nota">-</div>
+      </article>
+      <article class="kpi">
+        <div class="kpi-label">Media de atingimento</div>
+        <div id="kpiMediaAtingimento" class="kpi-valor">0,0%</div>
+        <div class="kpi-nota">Faturamento sobre a meta de cada mes</div>
+      </article>
+      <article class="kpi azul">
+        <div class="kpi-label">Comissao acumulada</div>
+        <div id="kpiComissaoHistorico" class="kpi-valor">R$ 0,00</div>
+        <div class="kpi-nota">Soma de todos os meses do historico</div>
+      </article>
     </div>
 
     <div class="tabela-wrap">
@@ -262,9 +286,11 @@
               <th>Mes</th>
               <th>Faturamento</th>
               <th>Origem</th>
+              <th>Meta do mes</th>
+              <th>Atingimento</th>
               <th>Faixa</th>
               <th>Comissao</th>
-              <th>Meta</th>
+              <th>Resultado</th>
               <th>Acao</th>
             </tr>
           </thead>
@@ -334,6 +360,7 @@
 
     function iniciar() {
       document.getElementById("lancData").value = CRM.hojeISO();
+      configurarHistorico();
       configurarAbas();
       configurarCamposMoeda();
       carregarConfiguracao();
@@ -358,8 +385,17 @@
       });
     }
 
+    /* O formulario de historico ja abre no mes anterior, com o que estiver salvo. */
+    function configurarHistorico() {
+      const campoMes = document.getElementById("histMes");
+      const hoje = new Date();
+      const anterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+      campoMes.value = `${anterior.getFullYear()}-${String(anterior.getMonth() + 1).padStart(2, "0")}`;
+      campoMes.addEventListener("change", carregarMesHistorico);
+    }
+
     function configurarCamposMoeda() {
-      ["lancValor", "histValor", "cfgEstabelecida", "cfgPessoal", "cfgTicket", "cfgAjuste"].forEach((id) => {
+      ["lancValor", "histValor", "histMeta", "cfgEstabelecida", "cfgPessoal", "cfgTicket", "cfgAjuste"].forEach((id) => {
         const campo = document.getElementById(id);
         campo.addEventListener("input", () => {
           campo.value = CRM.numeroBR(CRM.moedaParaNumero(campo.value));
@@ -474,18 +510,45 @@
 
     function salvarHistorico() {
       const status = document.getElementById("statusHistorico");
-      const resultado = CRM.salvarHistoricoManual(
-        document.getElementById("histMes").value,
-        CRM.moedaParaNumero(document.getElementById("histValor").value)
-      );
+      const competencia = document.getElementById("histMes").value;
+      const faturamento = CRM.moedaParaNumero(document.getElementById("histValor").value);
+      const meta = CRM.moedaParaNumero(document.getElementById("histMeta").value);
 
-      status.textContent = resultado.mensagem;
-      status.className = `status ${resultado.ok ? "ok" : "error"}`;
-
-      if (resultado.ok) {
-        document.getElementById("histValor").value = "0,00";
-        atualizarTudo();
+      const resultado = CRM.salvarHistoricoManual(competencia, faturamento);
+      if (!resultado.ok) {
+        status.textContent = resultado.mensagem;
+        status.className = "status error";
+        return;
       }
+
+      CRM.salvarMetaMensal(competencia, meta);
+
+      status.textContent = meta > 0
+        ? `${resultado.mensagem} Meta de ${CRM.moeda(meta)} aplicada a ${nomeMes(competencia)}.`
+        : `${resultado.mensagem} Sem meta propria: o mes usa a meta atual da configuracao.`;
+      status.className = "status ok";
+      atualizarTudo();
+    }
+
+    /* Traz para o formulario o que ja esta salvo no mes escolhido. */
+    function carregarMesHistorico() {
+      const status = document.getElementById("statusHistorico");
+      const competencia = document.getElementById("histMes").value;
+
+      if (!/^\d{4}-\d{2}$/.test(competencia)) {
+        status.textContent = "Escolha um mes primeiro.";
+        status.className = "status error";
+        return;
+      }
+
+      const linha = CRM.historicoMensal().find((item) => item.competencia === competencia);
+      document.getElementById("histValor").value = CRM.numeroBR(linha ? linha.total : 0);
+      document.getElementById("histMeta").value = CRM.numeroBR(linha && linha.metaPropria ? linha.meta : 0);
+
+      status.textContent = linha
+        ? `${nomeMes(competencia)} carregado. Ajuste os valores e salve.`
+        : `${nomeMes(competencia)} ainda nao tem registro. Preencha o faturamento e a meta.`;
+      status.className = "status ok";
     }
 
     function nomeMes(competencia) {
@@ -508,30 +571,52 @@
           tr.className = "linha-atingida";
         }
 
-        const acao = linha.manual > 0
-          ? `<button class="btn btn-perigo btn-mini" type="button" data-mes="${linha.competencia}">Remover manual</button>`
-          : '<span class="dica">-</span>';
+        const acoes = [];
+        if (linha.manual > 0) {
+          acoes.push(`<button class="btn btn-neutro btn-mini" type="button" data-acao="manual" data-mes="${linha.competencia}">Remover manual</button>`);
+        }
+        if (linha.metaPropria) {
+          acoes.push(`<button class="btn btn-perigo btn-mini" type="button" data-acao="meta" data-mes="${linha.competencia}">Remover meta</button>`);
+        }
 
         tr.innerHTML = `
           <td><strong>${nomeMes(linha.competencia)}</strong></td>
           <td>${CRM.moeda(linha.total)}</td>
           <td>${linha.manual > 0 ? "Fechamento manual" : `${CRM.moeda(linha.lancado)} em lancamentos`}</td>
+          <td>${CRM.moeda(linha.meta)}<br><span class="dica">${linha.metaPropria ? "meta do mes" : "meta atual"}</span></td>
+          <td><strong>${CRM.numeroBR(linha.progresso, 1)}%</strong><br><span class="dica">${linha.atingiuMeta ? `+ ${CRM.moeda(linha.sobra)} acima` : `faltou ${CRM.moeda(linha.falta)}`}</span></td>
           <td>${CRM.percentual(linha.comissao.percentualFaixa)}${linha.comissao.bonusAtivo ? ` + ${CRM.percentual(linha.comissao.percentualBonus)}` : ""}</td>
           <td><strong>${CRM.moeda(linha.comissao.valorTotal)}</strong></td>
           <td><span class="pill ${linha.atingiuMeta ? "ok" : "wait"}">${linha.atingiuMeta ? "Batida" : "Nao batida"}</span></td>
-          <td>${acao}</td>
+          <td>${acoes.length > 0 ? `<div class="acoes">${acoes.join("")}</div>` : '<span class="dica">-</span>'}</td>
         `;
 
-        const botao = tr.querySelector("button[data-mes]");
-        if (botao) {
+        tr.querySelectorAll("button[data-mes]").forEach((botao) => {
           botao.addEventListener("click", () => {
-            CRM.salvarHistoricoManual(linha.competencia, 0);
+            if (botao.dataset.acao === "meta") {
+              CRM.salvarMetaMensal(linha.competencia, 0);
+            } else {
+              CRM.salvarHistoricoManual(linha.competencia, 0);
+            }
             atualizarTudo();
           });
-        }
+        });
 
         corpo.appendChild(tr);
       });
+
+      const batidos = linhas.filter((linha) => linha.atingiuMeta).length;
+      const mediaAtingimento = linhas.length > 0
+        ? linhas.reduce((soma, linha) => soma + linha.progresso, 0) / linhas.length
+        : 0;
+      const comissaoTotal = linhas.reduce((soma, linha) => soma + linha.comissao.valorTotal, 0);
+
+      document.getElementById("kpiMesesBatidos").textContent = `${batidos} de ${linhas.length}`;
+      document.getElementById("kpiMesesBatidosNota").textContent = linhas.length > 0
+        ? `${linhas.length - batidos} mes(es) abaixo da meta`
+        : "Nenhum mes registrado ainda";
+      document.getElementById("kpiMediaAtingimento").textContent = `${CRM.numeroBR(mediaAtingimento, 1)}%`;
+      document.getElementById("kpiComissaoHistorico").textContent = CRM.moeda(comissaoTotal);
     }
 
     function preencherMeta(prefixo, meta, dados, porDia, idPill) {
