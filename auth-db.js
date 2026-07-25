@@ -2,10 +2,27 @@
   const DB_KEY = "controleSecao_usuarios_v1";
   const SESSION_KEY = "controleSecao_sessao_v1";
   const MIGRATION_DONE_KEY = "controleSecao_migracao_api_v1";
+  const LOCAL_API_URL_DEFAULT = "http://localhost:3000";
 
-  const API_BASE = window.location.protocol === "file:"
-    ? "http://localhost:3000/api"
-    : `${window.location.origin}/api`;
+  const API_URL = (() => {
+    const apiGlobal = typeof window.APP_CONFIG?.API_URL === "string"
+      ? window.APP_CONFIG.API_URL.trim()
+      : "";
+
+    if (apiGlobal) {
+      return apiGlobal.replace(/\/$/, "");
+    }
+
+    if (window.location.protocol === "file:") {
+      return LOCAL_API_URL_DEFAULT;
+    }
+
+    return window.location.origin;
+  })();
+
+  const API_BASE = /\/api$/i.test(API_URL)
+    ? API_URL
+    : `${API_URL}/api`;
 
   function normalizarLogin(login) {
     return (login || "").trim().toLowerCase();

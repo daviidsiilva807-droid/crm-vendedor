@@ -11,8 +11,8 @@ const AWS_REGION = process.env.AWS_REGION || "us-east-1";
 const AWS_ENDPOINT_URL = process.env.AWS_ENDPOINT_URL || "";
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "";
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "";
-const ADMIN_LOGIN = "daviidsiilva807";
-const ADMIN_SENHA = "L4ndeH4ck@100";
+const ADMIN_LOGIN = process.env.ADMIN_LOGIN || "daviidsiilva807";
+const ADMIN_SENHA = process.env.ADMIN_SENHA || "";
 const LOGIN_REGEX = /^[a-z0-9._-]{3,30}$/i;
 const MAX_LOGIN_TENTATIVAS = 5;
 const BLOQUEIO_MINUTOS = 15;
@@ -21,8 +21,30 @@ const DIA_EM_MS = 1000 * 60 * 60 * 24;
 
 let dynamodb = null;
 let dynamoRawClient = null;
+let inicializacaoPromise = null;
 
-if (process.env.AWS_ACCESS_KEY_ID) {
+const STORAGE_MODE = String(process.env.STORAGE_MODE || "").trim().toLowerCase();
+const CAMINHO_ESTADO_LOCAL = path.join(ROOT_DIR, "data", "state.json");
+
+function credenciaisAwsValidas() {
+  const chave = String(AWS_ACCESS_KEY_ID || "").trim();
+  const segredo = String(AWS_SECRET_ACCESS_KEY || "").trim();
+
+  if (!chave || !segredo) {
+    return false;
+  }
+
+  if (AWS_ENDPOINT_URL) {
+    return true;
+  }
+
+  const placeholder = /^(SUA_|SEU_|SUBSTITUA|CHANGE_?ME|EXEMPLO|EXAMPLE)/i;
+  return !placeholder.test(chave) && !placeholder.test(segredo);
+}
+
+const USAR_DYNAMO = STORAGE_MODE === "dynamodb" || (STORAGE_MODE !== "local" && credenciaisAwsValidas());
+
+if (USAR_DYNAMO) {
   const awsBaseConfig = {
     region: AWS_REGION,
     accessKeyId: AWS_ACCESS_KEY_ID,
@@ -32,6 +54,9 @@ if (process.env.AWS_ACCESS_KEY_ID) {
 
   dynamodb = new AWS.DynamoDB.DocumentClient(awsBaseConfig);
   dynamoRawClient = new AWS.DynamoDB(awsBaseConfig);
+} else {
+  dynamodb = criarClienteLocal();
+  dynamoRawClient = criarClienteRawLocal();
 }
 
 const TABLES = {
@@ -189,6 +214,170 @@ function sincronizarVencimentos(state) {
   return state;
 }
 
+/* --------------------------------------------------------------------------
+   Modo local: emula as operacoes usadas do DynamoDB gravando em
+   data/state.json. Ativado quando nao ha credenciais AWS validas no .env
+   ou quando STORAGE_MODE=local.
+   -------------------------------------------------------------------------- */
+
+function lerEstadoLocal() {
+  try {
+    const bruto = fs.readFileSync(CAMINHO_ESTADO_LOCAL, "utf8");
+    return sincronizarVencimentos(garantirEstruturaEstado(JSON.parse(bruto)));
+  } catch (erro) {
+    return criarEstadoVazio();
+  }
+}
+
+function salvarEstadoLocal(state) {
+  fs.mkdirSync(path.dirname(CAMINHO_ESTADO_LOCAL), { recursive: true });
+  fs.writeFileSync(CAMINHO_ESTADO_LOCAL, JSON.stringify(state, null, 2), "utf8");
+}
+
+function colecaoLocal(state, tableName) {
+  if (tableName === TABLES.SESSIONS) {
+    return { chave: "token", mapa: state.sessions };
+  }
+
+  if (tableName === TABLES.LOGIN_ATTEMPTS) {
+    return { chave: "login", mapa: state.loginAttempts };
+  }
+
+  return { chave: "login", lista: state.users };
+}
+
+function itensLocais(colecao) {
+  return colecao.lista ? colecao.lista : Object.values(colecao.mapa);
+}
+
+function lerCondicaoLocal(trecho) {
+  return String(trecho || "").trim().match(/^([#\w.]+)\s*=\s*(:\w+)$/);
+}
+
+function filtrarItensLocais(itens, params) {
+  const expressao = params.FilterExpression;
+
+  if (!expressao) {
+    return itens;
+  }
+
+  const valores = params.ExpressionAttributeValues || {};
+  const nomes = params.ExpressionAttributeNames || {};
+
+  return itens.filter((item) =>
+    String(expressao).split(/\s+and\s+/i).every((parte) => {
+      const condicao = lerCondicaoLocal(parte);
+      if (!condicao) {
+        return true;
+      }
+      const campo = nomes[condicao[1]] || condicao[1];
+      return item[campo] === valores[condicao[2]];
+    })
+  );
+}
+
+function aplicarUpdateLocal(item, params) {
+  const valores = params.ExpressionAttributeValues || {};
+  const nomes = params.ExpressionAttributeNames || {};
+  const corpo = String(params.UpdateExpression || "").trim().replace(/^set\s+/i, "");
+  const atualizado = { ...item };
+
+  corpo.split(",").forEach((atribuicao) => {
+    const condicao = lerCondicaoLocal(atribuicao);
+    if (!condicao) {
+      return;
+    }
+    const campo = nomes[condicao[1]] || condicao[1];
+    atualizado[campo] = valores[condicao[2]];
+  });
+
+  return atualizado;
+}
+
+function gravarItemLocal(state, tableName, item) {
+  const colecao = colecaoLocal(state, tableName);
+  const chave = item[colecao.chave];
+
+  if (colecao.lista) {
+    const indice = colecao.lista.findIndex((atual) => atual[colecao.chave] === chave);
+    if (indice >= 0) {
+      colecao.lista[indice] = item;
+    } else {
+      colecao.lista.push(item);
+    }
+    return;
+  }
+
+  colecao.mapa[chave] = item;
+}
+
+function criarClienteLocal() {
+  const operacao = (executor) => (params) => ({
+    promise: async () => executor(params || {})
+  });
+
+  return {
+    get: operacao((params) => {
+      const state = lerEstadoLocal();
+      const colecao = colecaoLocal(state, params.TableName);
+      const chave = (params.Key || {})[colecao.chave];
+      const item = itensLocais(colecao).find((atual) => atual[colecao.chave] === chave);
+      return { Item: item ? { ...item } : undefined };
+    }),
+
+    scan: operacao((params) => {
+      const state = lerEstadoLocal();
+      const itens = filtrarItensLocais(itensLocais(colecaoLocal(state, params.TableName)), params);
+      return { Items: itens.map((item) => ({ ...item })), Count: itens.length };
+    }),
+
+    put: operacao((params) => {
+      const state = lerEstadoLocal();
+      gravarItemLocal(state, params.TableName, { ...params.Item });
+      salvarEstadoLocal(state);
+      return {};
+    }),
+
+    delete: operacao((params) => {
+      const state = lerEstadoLocal();
+      const colecao = colecaoLocal(state, params.TableName);
+      const chave = (params.Key || {})[colecao.chave];
+
+      if (colecao.lista) {
+        state.users = colecao.lista.filter((item) => item[colecao.chave] !== chave);
+      } else {
+        delete colecao.mapa[chave];
+      }
+
+      salvarEstadoLocal(state);
+      return {};
+    }),
+
+    update: operacao((params) => {
+      const state = lerEstadoLocal();
+      const colecao = colecaoLocal(state, params.TableName);
+      const chave = (params.Key || {})[colecao.chave];
+      const atual = itensLocais(colecao).find((item) => item[colecao.chave] === chave) || { ...params.Key };
+      const atualizado = aplicarUpdateLocal(atual, params);
+
+      gravarItemLocal(state, params.TableName, atualizado);
+      salvarEstadoLocal(state);
+      return { Attributes: atualizado };
+    })
+  };
+}
+
+function criarClienteRawLocal() {
+  return {
+    describeTable: (params) => ({
+      promise: async () => ({ Table: { TableName: params.TableName } })
+    }),
+    createTable: (params) => ({
+      promise: async () => ({ TableDescription: { TableName: params.TableName } })
+    })
+  };
+}
+
 async function garantirAdminPadrao() {
   const adminLogin = normalizarLogin(ADMIN_LOGIN);
   try {
@@ -198,11 +387,14 @@ async function garantirAdminPadrao() {
     }).promise();
 
     if (!resultado.Item) {
+      /* Sem ADMIN_SENHA no .env, gera uma senha aleatoria e mostra uma unica vez. */
+      const senhaInicial = ADMIN_SENHA || crypto.randomBytes(9).toString("base64url");
+
       await dynamodb.put({
         TableName: TABLES.USERS,
         Item: {
           login: adminLogin,
-          senha: ADMIN_SENHA,
+          senha: senhaInicial,
           papel: "admin",
           ativo: true,
           vitalicio: true,
@@ -219,6 +411,11 @@ async function garantirAdminPadrao() {
           ativadoPor: null
         }
       }).promise();
+
+      if (!ADMIN_SENHA) {
+        console.log(`Administrador "${adminLogin}" criado com a senha inicial: ${senhaInicial}`);
+        console.log("Anote essa senha. Defina ADMIN_SENHA no .env para escolher a sua.");
+      }
     }
   } catch (erro) {
     console.error("Erro ao garantir admin padrao:", erro.message);
@@ -843,43 +1040,78 @@ function servirArquivoEstático(req, res, pathname) {
 }
 
 async function iniciarServidor() {
-  if (dynamodb && dynamoRawClient) {
-    await criarTabelasSeNecessario();
-    await garantirAdminPadrao();
-  } else {
-    console.log("AWS desativado temporariamente (credenciais ausentes). API respondera 503 ate configurar .env.");
-  }
+  await inicializarBackend();
 
   const servidor = http.createServer((req, res) => {
-    const urlAtual = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-    const pathname = urlAtual.pathname;
-
-    if (req.method === "OPTIONS") {
-      res.writeHead(204, {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-      });
-      res.end();
-      return;
-    }
-
-    if (pathname.startsWith("/api/")) {
-      processarApi(req, res, pathname, urlAtual.searchParams);
-      return;
-    }
-
-    if (servirArquivoEstático(req, res, pathname)) {
-      return;
-    }
-
-    responderJson(res, 404, { ok: false, mensagem: "Arquivo nao encontrado." });
+    tratarRequisicao(req, res).catch((erro) => {
+      console.error("Erro ao processar requisicao:", erro.message);
+      if (!res.headersSent) {
+        responderJson(res, 500, { ok: false, mensagem: "Erro interno do servidor." });
+      }
+    });
   });
 
   servidor.listen(PORT, () => {
     console.log(`Servidor do Controle de Secao rodando em http://localhost:${PORT}`);
-    console.log(`Usando DynamoDB na regiao ${AWS_REGION}`);
+    console.log(
+      USAR_DYNAMO
+        ? `Armazenamento: DynamoDB na regiao ${AWS_REGION}`
+        : `Armazenamento: modo local em ${path.relative(ROOT_DIR, CAMINHO_ESTADO_LOCAL)} (defina credenciais AWS reais no .env para usar o DynamoDB)`
+    );
   });
 }
 
-iniciarServidor();
+async function inicializarBackend() {
+  if (inicializacaoPromise) {
+    return inicializacaoPromise;
+  }
+
+  inicializacaoPromise = (async () => {
+    if (USAR_DYNAMO) {
+      await criarTabelasSeNecessario();
+    }
+
+    await garantirAdminPadrao();
+  })();
+
+  return inicializacaoPromise;
+}
+
+async function tratarRequisicao(req, res) {
+  const urlAtual = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const pathname = urlAtual.pathname;
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
+    });
+    res.end();
+    return;
+  }
+
+  if (pathname.startsWith("/api/")) {
+    await inicializarBackend();
+    await processarApi(req, res, pathname, urlAtual.searchParams);
+    return;
+  }
+
+  if (servirArquivoEstático(req, res, pathname)) {
+    return;
+  }
+
+  responderJson(res, 404, { ok: false, mensagem: "Arquivo nao encontrado." });
+}
+
+module.exports = {
+  tratarRequisicao,
+  iniciarServidor
+};
+
+if (require.main === module) {
+  iniciarServidor().catch((erro) => {
+    console.error("Falha ao iniciar servidor:", erro.message);
+    process.exit(1);
+  });
+}

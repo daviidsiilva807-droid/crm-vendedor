@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Agente de marketing</title>
+  <style>
+    .saida {
+      border: 1px dashed var(--laranja-borda);
+      background: var(--laranja-suave);
+      border-radius: var(--raio-sm);
+      padding: 16px;
+      white-space: pre-wrap;
+      font-size: 14.5px;
+      line-height: 1.6;
+      min-height: 140px;
+      color: var(--texto);
+    }
+
+    .sugestao {
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-sm);
+      padding: 14px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sugestao strong { font-size: 14px; }
+    .sugestao span { font-size: 13px; color: var(--texto-medio); line-height: 1.5; }
+
+    .salvo {
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-sm);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+
+    .salvo-topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .salvo-texto {
+      font-size: 13.5px;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      color: var(--texto-medio);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Agente de marketing</h1>
+    <p>Gere mensagens prontas para WhatsApp, Instagram e abordagem na loja. O agente usa seus dados de meta e faturamento para sugerir a acao mais util do dia.</p>
+  </div>
+
+  <div class="grid grid-3" id="sugestoes" style="margin-bottom:16px"></div>
+
+  <div class="grid grid-2" style="margin-bottom:16px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr)">
+    <div class="card">
+      <div class="card-titulo">
+        <h3>Montar mensagem</h3>
+        <small>Preencha e gere</small>
+      </div>
+
+      <div class="campo" style="margin-bottom:12px">
+        <label for="canal">Canal</label>
+        <select id="canal">
+          <option value="whatsapp">WhatsApp - mensagem direta</option>
+          <option value="status">Status / Stories</option>
+          <option value="instagram">Legenda de post no Instagram</option>
+          <option value="reativacao">Reativacao de cliente antigo</option>
+          <option value="reserva">Aviso de reserva / chegada de produto</option>
+          <option value="posvenda">Pos-venda e indicacao</option>
+        </select>
+      </div>
+
+      <div class="campo" style="margin-bottom:12px">
+        <label for="objetivo">Objetivo</label>
+        <select id="objetivo">
+          <option value="promocao">Divulgar promocao</option>
+          <option value="lancamento">Anunciar lancamento</option>
+          <option value="estoque">Girar estoque parado</option>
+          <option value="meta">Acelerar para bater a meta</option>
+          <option value="relacionamento">Relacionamento e fidelizacao</option>
+        </select>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="campo">
+          <label for="produto">Produto / colecao</label>
+          <input id="produto" type="text" maxlength="80" placeholder="Ex: Tenis Campus 00s">
+        </div>
+        <div class="campo">
+          <label for="cliente">Nome do cliente (opcional)</label>
+          <input id="cliente" type="text" maxlength="60" placeholder="Ex: Joao">
+        </div>
+        <div class="campo">
+          <label for="beneficio">Diferencial / condicao</label>
+          <input id="beneficio" type="text" maxlength="80" placeholder="Ex: 20% off ou 3x sem juros">
+        </div>
+        <div class="campo">
+          <label for="tom">Tom da mensagem</label>
+          <select id="tom">
+            <option value="proximo">Proximo e amigavel</option>
+            <option value="direto">Direto e objetivo</option>
+            <option value="urgencia">Com urgencia</option>
+            <option value="premium">Premium e elegante</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="acoes">
+        <button class="btn btn-primario" type="button" onclick="gerar()">Gerar mensagem</button>
+        <button class="btn btn-neutro" type="button" onclick="gerar(true)">Gerar outra variacao</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">
+        <h3>Mensagem gerada</h3>
+        <small id="contadorTexto">0 caracteres</small>
+      </div>
+      <div id="saida" class="saida">Preencha os campos ao lado e clique em "Gerar mensagem".</div>
+      <div class="acoes" style="margin-top:14px">
+        <button class="btn btn-secundario" type="button" onclick="copiar()">Copiar texto</button>
+        <button class="btn btn-neutro" type="button" onclick="salvar()">Salvar na biblioteca</button>
+        <a id="linkWhats" class="btn btn-primario" href="#" target="_blank" rel="noopener">Abrir no WhatsApp</a>
+      </div>
+      <div id="statusSaida" class="status"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">
+      <h3>Biblioteca de mensagens</h3>
+      <small id="contadorBiblioteca">0 salvas</small>
+    </div>
+    <div id="biblioteca"></div>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="app-shell.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+    let variacao = 0;
+
+    if (sessao) {
+      montarSugestoes();
+      montarBiblioteca();
+    }
+
+    function tratamento() {
+      const nome = document.getElementById("cliente").value.trim();
+      return nome ? nome.split(" ")[0] : "";
+    }
+
+    function produtoTexto() {
+      return document.getElementById("produto").value.trim() || "as novidades da loja";
+    }
+
+    function beneficioTexto() {
+      return document.getElementById("beneficio").value.trim();
+    }
+
+    function saudacao() {
+      const hora = new Date().getHours();
+      if (hora < 12) return "Bom dia";
+      if (hora < 18) return "Boa tarde";
+      return "Boa noite";
+    }
+
+    function fecho(tom) {
+      const opcoes = {
+        proximo: ["Posso separar pra voce?", "Quer que eu guarde uma peca no seu nome?", "Me chama aqui que eu te ajudo a escolher."],
+        direto: ["Consigo separar hoje. Confirma?", "Posso reservar? Responde aqui.", "Quer que eu ja deixe separado?"],
+        urgencia: ["Sao as ultimas pecas, quer que eu reserve?", "A condicao vale so ate o fim do dia.", "Restam poucas unidades, confirmo a sua?"],
+        premium: ["Fico a disposicao para um atendimento exclusivo.", "Posso reservar a peca para uma prova tranquila.", "Sera um prazer atender voce pessoalmente."]
+      };
+
+      const lista = opcoes[tom] || opcoes.proximo;
+      return lista[variacao % lista.length];
+    }
+
+    function abertura(tom, nome) {
+      const base = nome ? `${saudacao()}, ${nome}!` : `${saudacao()}!`;
+      const variantes = {
+        proximo: [`${base} Tudo bem?`, `${base} Espero que esteja tudo otimo.`, `${base} Passando aqui rapidinho.`],
+        direto: [`${base}`, `${base} Novidade rapida:`, `${base} Direto ao ponto:`],
+        urgencia: [`${base} Corre que e rapido:`, `${base} Aviso importante:`, `${base} Ultima chance:`],
+        premium: [`${base} E um prazer falar com voce.`, `${base} Separei algo especial.`, `${base} Uma selecao exclusiva chegou.`]
+      };
+
+      const lista = variantes[tom] || variantes.proximo;
+      return lista[variacao % lista.length];
+    }
+
+    function gerar(nova) {
+      if (nova) {
+        variacao += 1;
+      }
+
+      const canal = document.getElementById("canal").value;
+      const objetivo = document.getElementById("objetivo").value;
+      const tom = document.getElementById("tom").value;
+      const nome = tratamento();
+      const produto = produtoTexto();
+      const beneficio = beneficioTexto();
+      const dados = CRM.resumo();
+
+      const beneficioFrase = beneficio ? ` com ${beneficio}` : "";
+      let texto = "";
+
+      if (canal === "whatsapp") {
+        texto = `${abertura(tom, nome)}\n\nChegou ${produto}${beneficioFrase}. Lembrei de voce porque combina bastante com o seu estilo.\n\n${fecho(tom)}`;
+      } else if (canal === "status") {
+        texto = `${produto.toUpperCase()}${beneficio ? `\n${beneficio.toUpperCase()}` : ""}\n\nDisponivel hoje na loja.\nChama no direct que eu separo o seu.`;
+      } else if (canal === "instagram") {
+        texto = `${produto} chegou${beneficioFrase}.\n\nA peca que combina com o seu dia a dia e ainda te deixa com visual novo.\nComenta "EU QUERO" que eu te chamo no direct.\n\n#novidade #estilo #lojafisica`;
+      } else if (canal === "reativacao") {
+        texto = `${abertura(tom, nome)}\n\nFaz um tempo que voce nao aparece por aqui e chegaram pecas novas que tem tudo a ver com o que voce levou da ultima vez${beneficio ? `. Consigo aplicar ${beneficio} pra voce` : ""}.\n\n${fecho(tom)}`;
+      } else if (canal === "reserva") {
+        texto = `${abertura(tom, nome)}\n\nBoa noticia: ${produto} chegou e ja esta separado no seu nome${beneficio ? ` ${beneficio}` : ""}. Consigo guardar ate amanha no fim do dia.\n\nQual melhor horario pra voce passar aqui?`;
+      } else {
+        texto = `${abertura(tom, nome)}\n\nPassando pra saber como foi a experiencia com ${produto}. Se precisar de ajuste, troca ou dica de combinacao, e so falar comigo.\n\nSe curtir o atendimento, indica meu contato pra alguem que esteja procurando algo parecido. Isso me ajuda demais.`;
+      }
+
+      if (objetivo === "meta" && !dados.estabelecida.atingiu) {
+        texto += `\n\n(Interno: faltam ${CRM.moeda(dados.estabelecida.falta)} para a meta - foco em ${CRM.moeda(dados.necessarioPorDiaEstabelecida)} por dia.)`;
+      } else if (objetivo === "estoque") {
+        texto += `\n\nPS: temos poucas unidades dessa grade e nao repoe.`;
+      } else if (objetivo === "lancamento") {
+        texto += `\n\nEsse e lancamento, chegou essa semana.`;
+      } else if (objetivo === "promocao" && !beneficio) {
+        texto += `\n\nCondicao especial valida enquanto durar o estoque.`;
+      } else if (objetivo === "relacionamento") {
+        texto += `\n\nQualquer duvida sobre tamanho ou combinacao, pode me chamar direto.`;
+      }
+
+      const saida = document.getElementById("saida");
+      saida.textContent = texto;
+      document.getElementById("contadorTexto").textContent = `${texto.length} caracteres`;
+      document.getElementById("linkWhats").href = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    }
+
+    function copiar() {
+      const texto = document.getElementById("saida").textContent;
+      const status = document.getElementById("statusSaida");
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(
+          () => {
+            status.textContent = "Texto copiado.";
+            status.className = "status ok";
+          },
+          () => {
+            status.textContent = "Nao foi possivel copiar. Selecione o texto manualmente.";
+            status.className = "status error";
+          }
+        );
+        return;
+      }
+
+      status.textContent = "Copia automatica indisponivel neste navegador.";
+      status.className = "status error";
+    }
+
+    function salvar() {
+      const texto = document.getElementById("saida").textContent;
+      const status = document.getElementById("statusSaida");
+
+      if (!texto || texto.startsWith("Preencha os campos")) {
+        status.textContent = "Gere uma mensagem antes de salvar.";
+        status.className = "status error";
+        return;
+      }
+
+      const resultado = CRM.salvarCampanha({
+        canal: document.getElementById("canal").options[document.getElementById("canal").selectedIndex].text,
+        objetivo: document.getElementById("objetivo").options[document.getElementById("objetivo").selectedIndex].text,
+        texto
+      });
+
+      status.textContent = resultado.mensagem;
+      status.className = "status ok";
+      montarBiblioteca();
+    }
+
+    function montarBiblioteca() {
+      const lista = CRM.listarCampanhas();
+      const caixa = document.getElementById("biblioteca");
+      document.getElementById("contadorBiblioteca").textContent = `${lista.length} salva(s)`;
+      caixa.innerHTML = "";
+
+      if (lista.length === 0) {
+        caixa.innerHTML = '<div class="vazio">Nenhuma mensagem salva ainda.</div>';
+        return;
+      }
+
+      lista.forEach((item) => {
+        const bloco = document.createElement("div");
+        bloco.className = "salvo";
+
+        const topo = document.createElement("div");
+        topo.className = "salvo-topo";
+        topo.innerHTML = `<span class="pill laranja">${item.canal}</span><span class="dica">${item.objetivo} - ${new Date(item.criadoEm).toLocaleDateString("pt-BR")}</span>`;
+
+        const acao = document.createElement("button");
+        acao.type = "button";
+        acao.className = "btn btn-perigo btn-mini";
+        acao.textContent = "Excluir";
+        acao.addEventListener("click", () => {
+          CRM.removerCampanha(item.id);
+          montarBiblioteca();
+        });
+        topo.appendChild(acao);
+
+        const corpo = document.createElement("div");
+        corpo.className = "salvo-texto";
+        corpo.textContent = item.texto;
+
+        bloco.appendChild(topo);
+        bloco.appendChild(corpo);
+        caixa.appendChild(bloco);
+      });
+    }
+
+    function montarSugestoes() {
+      const dados = CRM.resumo();
+      const caixa = document.getElementById("sugestoes");
+      const sugestoes = [];
+
+      if (dados.estabelecida.atingiu) {
+        sugestoes.push({
+          titulo: "Meta batida - foco na pessoal",
+          texto: `Voce ja garantiu ${CRM.moeda(dados.comissao.valorTotal)} de comissao (faixa + bonus). Faltam ${CRM.moeda(dados.pessoal.falta)} para a meta pessoal, o que levaria a comissao para ${CRM.moeda(dados.pessoal.previsaoSeAtingir)}.`
+        });
+      } else {
+        sugestoes.push({
+          titulo: "Acao do dia",
+          texto: `Faltam ${CRM.moeda(dados.estabelecida.falta)} para a meta. Isso da ${CRM.moeda(dados.necessarioPorDiaEstabelecida)} por dia. Envie 10 mensagens de reativacao hoje.`
+        });
+      }
+
+      if (dados.totalUltimos3 <= 0) {
+        sugestoes.push({
+          titulo: "Ritmo parado",
+          texto: "Sem vendas registradas nos ultimos 3 dias. Use o canal 'Reativacao de cliente antigo' e priorize quem comprou ha mais de 60 dias."
+        });
+      } else {
+        sugestoes.push({
+          titulo: "Ritmo dos ultimos 3 dias",
+          texto: `Voce fez ${CRM.moeda(dados.totalUltimos3)} em 3 dias. Repita a abordagem que funcionou e poste um status com o produto mais vendido.`
+        });
+      }
+
+      sugestoes.push({
+        titulo: "Conteudo recorrente",
+        texto: "Poste 1 status pela manha (novidade), 1 a tarde (prova social) e 1 a noite (ultimas pecas). Consistencia gera atendimento no dia seguinte."
+      });
+
+      caixa.innerHTML = sugestoes
+        .map((item) => `<div class="sugestao"><strong>${item.titulo}</strong><span>${item.texto}</span></div>`)
+        .join("");
+    }
+  </script>
+</body>
+</html>

@@ -4,3 +4,9 @@ node_modules/
 .DS_Store
 *.log
 
+
+# Base local do modo sem AWS (contem senhas)
+data/state.json
+
+# Configuracao local do Claude Code
+.claude/

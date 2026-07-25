@@ -5,581 +5,394 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#0f766e">
+  <meta name="theme-color" content="#f97316">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Controle">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
   <title>Dashboard - Controle de Secao</title>
   <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(rgba(0, 0, 0, 0.26), rgba(0, 0, 0, 0.26)), url("img/logoadidas.png") center / cover fixed no-repeat;
-      padding: 14px;
-      color: #111827;
-    }
-
-    .page {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    .header {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 14px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-      margin-bottom: 14px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(1.4rem, 5vw, 2rem);
-    }
-
-    .welcome {
-      margin-top: 8px;
-      color: #374151;
-      font-size: 15px;
-      font-weight: bold;
-    }
-
-    .subtitle {
-      margin-top: 6px;
-      color: #4b5563;
-      font-size: 14px;
-    }
-
-    .billing-banner {
-      margin-top: 12px;
-      border-radius: 12px;
-      padding: 12px 14px;
-      background: linear-gradient(135deg, #ecfeff, #e0f2fe);
-      border: 1px solid #bae6fd;
-      color: #0f172a;
-    }
-
-    .billing-banner strong {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 14px;
-    }
-
-    .billing-line {
-      margin-top: 2px;
-      font-size: 13px;
-      color: #334155;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-      margin-left: 8px;
-    }
-
-    .badge.ok { background: #bbf7d0; color: #14532d; }
-    .badge.warn { background: #fde68a; color: #92400e; }
-    .badge.off { background: #fecaca; color: #991b1b; }
-
-    .usuarios-lista {
-      margin-top: 10px;
+    .dias-grid {
       display: grid;
-      gap: 10px;
-    }
-
-    .usuario-card {
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 12px;
-      background: #f8fafc;
-    }
-
-    .usuario-topo {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .usuario-nome {
-      font-weight: bold;
-      color: #0f172a;
-    }
-
-    .usuario-detalhes {
-      margin-top: 6px;
-      font-size: 13px;
-      color: #475569;
-      line-height: 1.5;
-    }
-
-    .usuario-credenciais {
-      margin-top: 8px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      font-size: 13px;
-      color: #7c2d12;
-      line-height: 1.5;
-      word-break: break-word;
-    }
-
-    .usuario-acoes {
-      margin-top: 10px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .mini-btn {
-      min-height: 38px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid #cbd5e1;
-      background: #fff;
-      color: #0f172a;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .mini-btn.primary {
-      background: #0f766e;
-      color: #fff;
-      border-color: #0f766e;
-    }
-
-    .mini-btn.danger {
-      background: #fee2e2;
-      color: #991b1b;
-      border-color: #fecaca;
-    }
-
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
 
-    .card {
+    .dia-card {
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-sm);
+      padding: 12px;
       background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 14px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
     }
 
-    .card h2 {
-      margin: 0;
-      font-size: 1.1rem;
+    .dia-card.hoje {
+      border-color: var(--laranja);
+      background: var(--laranja-suave);
     }
 
-    .card p {
-      margin: 8px 0 0;
-      color: #4b5563;
-      font-size: 14px;
+    .dia-card .dia-label {
+      font-size: 11.5px;
+      color: var(--texto-fraco);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
     }
 
-    .links {
-      margin-top: 12px;
+    .dia-card .dia-valor {
+      margin-top: 6px;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
+    .meta-linha {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .link-btn {
-      min-height: 44px;
-      border-radius: 10px;
-      border: none;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 12px;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .link-main {
-      background: #0f766e;
-      color: #fff;
-    }
-
-    .link-sub {
-      background: #eef2ff;
-      color: #1e3a8a;
-      border: 1px solid #c7d2fe;
-    }
-
-    .logout {
-      margin-top: 14px;
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .admin-card {
-      margin-top: 12px;
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 14px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-      display: none;
-    }
-
-    .admin-form {
-      margin-top: 10px;
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
-
-    .admin-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .admin-field label {
-      font-size: 14px;
-      font-weight: bold;
-      color: #334155;
-    }
-
-    .admin-field input {
-      min-height: 42px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 14px;
-    }
-
-    .admin-actions {
-      margin-top: 10px;
-      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
+      margin-top: 16px;
     }
 
-    .status {
-      margin-top: 10px;
-      font-size: 14px;
-      font-weight: bold;
+    .meta-linha:first-of-type { margin-top: 0; }
+
+    .meta-nome { font-size: 13.5px; font-weight: 700; }
+    .meta-num { font-size: 13.5px; color: var(--texto-medio); }
+
+    .registro-rapido {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr auto;
+      gap: 10px;
+      align-items: end;
     }
 
-    .status.ok { color: #166534; }
-    .status.error { color: #b91c1c; }
-
-    @media (max-width: 700px) {
-      body { padding: 10px; }
+    @media (max-width: 560px) {
+      .dias-grid { grid-template-columns: 1fr; }
+      .registro-rapido { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="header">
-      <h1>&#128187; Dashboard</h1>
-      <div id="nomeVendedor" class="welcome">Vendedor: -</div>
-      <div class="subtitle">Escolha abaixo a area que deseja acessar.</div>
-      <div id="assinaturaBanner" class="billing-banner"></div>
-    </div>
-
-    <div class="cards">
-      <section class="card">
-        <h2>&#128176; Vendas</h2>
-        <p>Calculo de meta mensal, comissao, valor por dia e proxima meta.</p>
-        <div class="links">
-          <a class="link-btn link-main" href="vendas.html">Ir para Vendas</a>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>&#128230; Secao</h2>
-        <p>Escolha o tipo de produto para registrar entrada e conferencia.</p>
-        <div class="links">
-          <a class="link-btn link-sub" href="vestuario.html">&#128085; Vestuario</a>
-          <a class="link-btn link-sub" href="tenis.html">&#128095; Tenis</a>
-          <a class="link-btn link-sub" href="acessorios.html">&#128717; Acessorios</a>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>&#128101; Clientes</h2>
-        <p>Cadastre clientes, abra conversa no WhatsApp e acompanhe reservas.</p>
-        <div class="links">
-          <a class="link-btn link-main" href="clientes.html">Ir para Clientes</a>
-        </div>
-      </section>
-    </div>
-
-    <section id="adminCard" class="admin-card">
-      <h2>&#128274; Administrador - Cadastro de vendedores</h2>
-      <p>Apenas o usuario administrador daviidsiilva807 pode criar novos logins.</p>
-
-      <div class="admin-form">
-        <div class="admin-field">
-          <label for="novoLogin">Novo login</label>
-          <input id="novoLogin" type="text" placeholder="Ex: maria.silva">
-        </div>
-        <div class="admin-field">
-          <label for="novaSenha">Senha</label>
-          <input id="novaSenha" type="password" placeholder="Minimo 4 caracteres">
-        </div>
-      </div>
-
-      <div class="admin-actions">
-        <button class="link-btn link-main" type="button" onclick="cadastrarVendedor()">Cadastrar vendedor</button>
-        <button class="link-btn link-sub" type="button" onclick="atualizarListaVendedores()">Atualizar lista</button>
-      </div>
-
-      <div id="statusAdmin" class="status"></div>
-
-      <div class="usuarios-lista">
-        <strong>Vendedores cadastrados:</strong>
-        <div id="listaVendedores"></div>
-      </div>
-    </section>
-
-    <button class="link-btn logout" type="button" onclick="sair()">Sair</button>
+  <div class="page-head">
+    <h1>Visao geral do mes</h1>
+    <p>Acompanhe seu faturamento, o ritmo em relacao a meta e a comissao acumulada. Os numeros abaixo consideram apenas o mes atual.</p>
   </div>
 
+  <div id="avisoPlano" class="aviso" style="margin-bottom:16px"></div>
+
+  <section class="grid grid-kpi" style="margin-bottom:16px">
+    <article class="kpi">
+      <div class="kpi-label">Vendas ate o momento</div>
+      <div id="kpiVendas" class="kpi-valor">R$ 0,00</div>
+      <div id="kpiVendasNota" class="kpi-nota">-</div>
+    </article>
+
+    <article class="kpi verde">
+      <div class="kpi-label">Comissao ate o momento</div>
+      <div id="kpiComissao" class="kpi-valor">R$ 0,00</div>
+      <div id="kpiComissaoNota" class="kpi-nota">-</div>
+    </article>
+
+    <article class="kpi azul">
+      <div class="kpi-label">Vendas nos ultimos 3 dias</div>
+      <div id="kpiTresDias" class="kpi-valor">R$ 0,00</div>
+      <div id="kpiTresDiasNota" class="kpi-nota">-</div>
+    </article>
+
+    <article class="kpi cinza">
+      <div class="kpi-label">Falta para a meta estabelecida</div>
+      <div id="kpiFalta" class="kpi-valor">R$ 0,00</div>
+      <div id="kpiFaltaNota" class="kpi-nota">-</div>
+    </article>
+  </section>
+
+  <section class="grid grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-titulo">
+        <h3>Evolucao das vendas x meta</h3>
+        <small id="graficoMes">-</small>
+      </div>
+      <div id="grafico" class="grafico-box"></div>
+      <div class="legenda">
+        <span><i style="background:#f97316"></i>Vendas acumuladas</span>
+        <span><i style="background:#94a3b8"></i>Ritmo ideal</span>
+        <span><i style="background:#16a34a"></i>Meta estabelecida</span>
+        <span><i style="background:#2563eb"></i>Meta pessoal</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">
+        <h3>Progresso das metas</h3>
+        <small>Faixa do mes + bonus de <span id="txtPercentual">0,6</span>% na meta</small>
+      </div>
+
+      <div class="meta-linha">
+        <span class="meta-nome">Meta estabelecida</span>
+        <span id="metaEstabValor" class="meta-num">-</span>
+      </div>
+      <div class="barra"><span id="barraEstab" style="width:0%"></span></div>
+      <div id="metaEstabNota" class="kpi-nota">-</div>
+      <div id="metaEstabGanho" class="kpi-tag">-</div>
+
+      <div class="meta-linha">
+        <span class="meta-nome">Meta pessoal</span>
+        <span id="metaPessoalValor" class="meta-num">-</span>
+      </div>
+      <div class="barra"><span id="barraPessoal" style="width:0%"></span></div>
+      <div id="metaPessoalNota" class="kpi-nota">-</div>
+      <div id="metaPessoalGanho" class="kpi-tag">-</div>
+
+      <div class="card-titulo" style="margin:20px 0 10px">
+        <h3>Vendas dos ultimos 3 dias</h3>
+      </div>
+      <div id="dias3" class="dias-grid"></div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom:16px">
+    <div class="card-titulo">
+      <h3>Registro rapido de venda</h3>
+      <small>Lancamentos alimentam o grafico, a comissao e a aba Vendas</small>
+    </div>
+    <div class="registro-rapido">
+      <div class="campo">
+        <label for="rapidoValor">Valor da venda (R$)</label>
+        <input id="rapidoValor" type="text" inputmode="decimal" value="0,00">
+      </div>
+      <div class="campo">
+        <label for="rapidoData">Data</label>
+        <input id="rapidoData" type="date">
+      </div>
+      <button class="btn btn-primario" type="button" onclick="registrarVendaRapida()">Registrar venda</button>
+    </div>
+    <div id="statusRapido" class="status"></div>
+  </section>
+
+  <section class="motivacao">
+    <div class="icone">&#128293;</div>
+    <div>
+      <div id="fraseMotivacional" class="frase">-</div>
+      <div id="assinaturaFrase" class="assinatura">-</div>
+    </div>
+  </section>
+
+  <script src="app-config.js"></script>
   <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="app-shell.js"></script>
   <script>
     const sessao = AuthDB.exigirLogin();
-    let ehAdmin = false;
 
-    function formatarMoeda(valor) {
-      return Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    if (sessao) {
+      CRM.migrarDadosAntigos();
+      document.getElementById("rapidoData").value = CRM.hojeISO();
+      configurarCampoMoeda();
+      atualizarPainel();
+      mostrarFrase();
+      mostrarPlano();
     }
 
-    function formatarData(dataISO) {
-      if (!dataISO) {
-        return "-";
-      }
-
-      return new Date(dataISO).toLocaleDateString("pt-BR");
-    }
-
-    function montarBadge(status) {
-      const badge = document.createElement("span");
-      badge.className = `badge ${status === "ativo" ? "ok" : status === "vencido" ? "warn" : status === "vitalicio" ? "ok" : "off"}`;
-      badge.textContent = status === "ativo" ? "Ativo" : status === "vencido" ? "Vencido" : status === "vitalicio" ? "Vitalicio" : "Desativado";
-      return badge;
-    }
-
-    function carregarVendedor() {
-      if (!sessao) {
-        return;
-      }
-
-      document.getElementById("nomeVendedor").textContent = `Vendedor: ${sessao.login}`;
-      ehAdmin = sessao.papel === "admin" && sessao.login.toLowerCase() === "daviidsiilva807";
-
-      atualizarBannerAssinatura();
-
-      if (ehAdmin) {
-        document.getElementById("adminCard").style.display = "block";
-        atualizarListaVendedores();
-      }
-    }
-
-    function setStatus(mensagem, tipo) {
-      const status = document.getElementById("statusAdmin");
-      status.textContent = mensagem;
-      status.className = `status ${tipo}`;
-    }
-
-    function atualizarBannerAssinatura() {
-      const banner = document.getElementById("assinaturaBanner");
-      const status = AuthDB.obterStatusUsuario(sessao.login);
-
-      if (!status) {
-        banner.innerHTML = "";
-        return;
-      }
-
-      const textoPrincipal = status.vitalicio
-        ? "Usuario vitalicio. Acesso liberado sem vencimento."
-        : status.ativo
-          ? `Plano ativo de ${status.planoDias} dias por ${formatarMoeda(status.planoValor || 20)}.`
-          : status.mensagem;
-
-      const linhaSecundaria = status.vitalicio
-        ? "Nao ha data de expiracao para este usuario."
-        : `Faltam ${status.diasRestantes} dia(s) para vencer. Vencimento em ${formatarData(status.assinaturaFimEm)}.`;
-
-      banner.innerHTML = `
-        <strong>${textoPrincipal}</strong>
-        <div class="billing-line">${linhaSecundaria}</div>
-      `;
-    }
-
-    function aplicarPlano(login, diasPlano) {
-      const resultado = AuthDB.ativarUsuario(login, diasPlano, sessao.login);
-      if (!resultado.ok) {
-        setStatus(resultado.mensagem, "error");
-        return;
-      }
-
-      setStatus(resultado.mensagem, "ok");
-      atualizarListaVendedores();
-      atualizarBannerAssinatura();
-    }
-
-    function desativarUsuario(login) {
-      const resultado = AuthDB.desativarUsuario(login, "Desativado manualmente por falta de pagamento.", sessao.login);
-      if (!resultado.ok) {
-        setStatus(resultado.mensagem, "error");
-        return;
-      }
-
-      setStatus(resultado.mensagem, "ok");
-      atualizarListaVendedores();
-      atualizarBannerAssinatura();
-    }
-
-    function excluirUsuario(login) {
-      if (!confirm(`Excluir o vendedor ${login}? Esta acao remove o login e a senha salvos.`)) {
-        return;
-      }
-
-      const resultado = AuthDB.excluirUsuario(login, sessao.login);
-      if (!resultado.ok) {
-        setStatus(resultado.mensagem, "error");
-        return;
-      }
-
-      setStatus(resultado.mensagem, "ok");
-      atualizarListaVendedores();
-      atualizarBannerAssinatura();
-    }
-
-    function cadastrarVendedor() {
-      if (!ehAdmin) {
-        return;
-      }
-
-      const novoLogin = document.getElementById("novoLogin").value.trim();
-      const novaSenha = document.getElementById("novaSenha").value;
-      const resultado = AuthDB.criarUsuarioVendedor(novoLogin, novaSenha, sessao.login);
-
-      if (!resultado.ok) {
-        setStatus(resultado.mensagem, "error");
-        return;
-      }
-
-      document.getElementById("novoLogin").value = "";
-      document.getElementById("novaSenha").value = "";
-      setStatus(resultado.mensagem, "ok");
-      atualizarListaVendedores();
-    }
-
-    function atualizarListaVendedores() {
-      if (!ehAdmin) {
-        return;
-      }
-
-      const vendedores = AuthDB.listarVendedores();
-      const lista = document.getElementById("listaVendedores");
-      lista.innerHTML = "";
-
-      if (vendedores.length === 0) {
-        const vazio = document.createElement("div");
-        vazio.textContent = "Nenhum vendedor cadastrado ainda.";
-        vazio.className = "usuario-detalhes";
-        lista.appendChild(vazio);
-        return;
-      }
-
-      vendedores.forEach((vendedor) => {
-        const status = AuthDB.obterStatusUsuario(vendedor.login);
-        const card = document.createElement("div");
-        card.className = "usuario-card";
-
-        const topo = document.createElement("div");
-        topo.className = "usuario-topo";
-
-        const nome = document.createElement("div");
-        nome.className = "usuario-nome";
-        nome.textContent = vendedor.login;
-
-        const badge = montarBadge(status ? status.status : "desativado");
-        topo.appendChild(nome);
-        topo.appendChild(badge);
-
-        const detalhes = document.createElement("div");
-        detalhes.className = "usuario-detalhes";
-        const dias = status && status.vitalicio ? "vitalicio" : (status ? status.diasRestantes : 0);
-        const assinatura = status && status.vitalicio ? "sem vencimento" : (status && status.assinaturaFimEm ? formatarData(status.assinaturaFimEm) : "sem assinatura");
-        const planoTexto = status && status.vitalicio
-          ? "vitalicio"
-          : `${vendedor.planoDias || 30} dias (${formatarMoeda(vendedor.planoValor || 20)})`;
-        detalhes.textContent = `Criado por ${vendedor.criadoPor}. Plano atual: ${planoTexto}. Restam ${dias}. Vence em ${assinatura}.`;
-
-        const credenciais = document.createElement("div");
-        credenciais.className = "usuario-credenciais";
-        credenciais.textContent = `Login: ${vendedor.login} | Senha: ${vendedor.senha || "-"}`;
-
-        const acoes = document.createElement("div");
-        acoes.className = "usuario-acoes";
-
-        const botao30 = document.createElement("button");
-        botao30.type = "button";
-        botao30.className = "mini-btn primary";
-        botao30.textContent = "Ativar 30 dias";
-        botao30.addEventListener("click", () => aplicarPlano(vendedor.login, 30));
-
-        const botao90 = document.createElement("button");
-        botao90.type = "button";
-        botao90.className = "mini-btn primary";
-        botao90.textContent = "Ativar 90 dias";
-        botao90.addEventListener("click", () => aplicarPlano(vendedor.login, 90));
-
-        const botaoDesativar = document.createElement("button");
-        botaoDesativar.type = "button";
-        botaoDesativar.className = "mini-btn danger";
-        botaoDesativar.textContent = "Desativar";
-        botaoDesativar.addEventListener("click", () => desativarUsuario(vendedor.login));
-
-        const botaoExcluir = document.createElement("button");
-        botaoExcluir.type = "button";
-        botaoExcluir.className = "mini-btn danger";
-        botaoExcluir.textContent = "Excluir";
-        botaoExcluir.addEventListener("click", () => excluirUsuario(vendedor.login));
-
-        acoes.appendChild(botao30);
-        acoes.appendChild(botao90);
-        acoes.appendChild(botaoDesativar);
-        acoes.appendChild(botaoExcluir);
-
-        card.appendChild(topo);
-        card.appendChild(detalhes);
-        card.appendChild(credenciais);
-        card.appendChild(acoes);
-        lista.appendChild(card);
+    function configurarCampoMoeda() {
+      const campo = document.getElementById("rapidoValor");
+      campo.addEventListener("input", () => {
+        campo.value = CRM.numeroBR(CRM.moedaParaNumero(campo.value));
       });
     }
 
-    function sair() {
-      AuthDB.sair();
-      window.location.href = "index.html";
+    function mostrarFrase() {
+      const frase = CRM.fraseDoDia();
+      document.getElementById("fraseMotivacional").textContent = `"${frase.texto}"`;
+      document.getElementById("assinaturaFrase").textContent = `${frase.autor} - frase do dia`;
     }
 
-    if (sessao) {
-      carregarVendedor();
+    function mostrarPlano() {
+      const aviso = document.getElementById("avisoPlano");
+      const status = AuthDB.obterStatusUsuario(sessao.login);
+
+      if (!status) {
+        aviso.textContent = "";
+        return;
+      }
+
+      if (status.vitalicio) {
+        aviso.className = "aviso ok";
+        aviso.textContent = "Acesso vitalicio ativo. Nao ha data de vencimento.";
+        return;
+      }
+
+      if (status.ativo) {
+        aviso.className = "aviso";
+        aviso.textContent = `Plano de ${status.planoDias} dias ativo. Faltam ${status.diasRestantes} dia(s), vence em ${CRM.formatarDataBR(String(status.assinaturaFimEm || "").slice(0, 10))}.`;
+        return;
+      }
+
+      aviso.className = "aviso erro";
+      aviso.textContent = status.mensagem || "Acesso inativo.";
+    }
+
+    function registrarVendaRapida() {
+      const valor = CRM.moedaParaNumero(document.getElementById("rapidoValor").value);
+      const data = document.getElementById("rapidoData").value;
+      const status = document.getElementById("statusRapido");
+      const resultado = CRM.adicionarLancamento({ valor, data });
+
+      status.textContent = resultado.mensagem;
+      status.className = `status ${resultado.ok ? "ok" : "error"}`;
+
+      if (resultado.ok) {
+        document.getElementById("rapidoValor").value = "0,00";
+        atualizarPainel();
+      }
+    }
+
+    function atualizarPainel() {
+      const dados = CRM.resumo();
+
+      document.getElementById("txtPercentual").textContent = CRM.numeroBR(dados.config.percentualBonus, 1);
+      document.getElementById("graficoMes").textContent = `${nomeDoMes(dados.competencia)} - dia ${dados.diaAtual} de ${dados.totalDias}`;
+
+      document.getElementById("kpiVendas").textContent = CRM.moeda(dados.faturamento);
+      document.getElementById("kpiVendasNota").textContent =
+        `Media de ${CRM.moeda(dados.mediaDiaria)} por dia | projecao do mes ${CRM.moeda(dados.projecao)}`;
+
+      const comissao = dados.comissao;
+      document.getElementById("kpiComissao").textContent = CRM.moeda(comissao.valorTotal);
+      document.getElementById("kpiComissaoNota").textContent = comissao.bonusAtivo
+        ? `Faixa ${CRM.percentual(comissao.percentualFaixa)} = ${CRM.moeda(comissao.valorFaixa)} + bonus ${CRM.percentual(comissao.percentualBonus)} = ${CRM.moeda(comissao.valorBonus)}`
+        : comissao.faixa
+          ? `Faixa de ${CRM.moedaCurta(comissao.faixaValor)} a ${CRM.percentual(comissao.percentualFaixa)}. O bonus de ${CRM.percentual(comissao.percentualBonus)} entra ao bater a meta estabelecida.`
+          : `Sem faixa atingida. A primeira e ${CRM.moedaCurta(CRM.FAIXAS_COMISSAO[0].valor)} a ${CRM.percentual(CRM.FAIXAS_COMISSAO[0].percentual)}, faltam ${CRM.moeda(dados.faltaProximaFaixa)}.`;
+
+      document.getElementById("kpiTresDias").textContent = CRM.moeda(dados.totalUltimos3);
+      document.getElementById("kpiTresDiasNota").textContent =
+        `Media de ${CRM.moeda(dados.totalUltimos3 / 3)} por dia nos ultimos 3 dias`;
+
+      document.getElementById("kpiFalta").textContent = CRM.moeda(dados.estabelecida.falta);
+      document.getElementById("kpiFaltaNota").textContent = dados.estabelecida.atingiu
+        ? "Meta estabelecida atingida. Foco agora na meta pessoal."
+        : `Precisa de ${CRM.moeda(dados.necessarioPorDiaEstabelecida)} por dia nos ${dados.diasRestantes} dia(s) restantes.`;
+
+      atualizarMeta("Estab", dados.estabelecida, dados);
+      atualizarMeta("Pessoal", dados.pessoal, dados);
+
+      montarDias(dados);
+      desenharGrafico(dados);
+    }
+
+    function atualizarMeta(sufixo, meta, dados) {
+      const idValor = sufixo === "Estab" ? "metaEstabValor" : "metaPessoalValor";
+      const idBarra = sufixo === "Estab" ? "barraEstab" : "barraPessoal";
+      const idNota = sufixo === "Estab" ? "metaEstabNota" : "metaPessoalNota";
+      const idGanho = sufixo === "Estab" ? "metaEstabGanho" : "metaPessoalGanho";
+      const necessario = sufixo === "Estab" ? dados.necessarioPorDiaEstabelecida : dados.necessarioPorDiaPessoal;
+      const simulacao = meta.simulacao;
+
+      document.getElementById(idValor).textContent =
+        `${CRM.moeda(dados.faturamento)} de ${CRM.moeda(meta.meta)} (${CRM.numeroBR(meta.progresso, 1)}%)`;
+
+      const barra = document.getElementById(idBarra);
+      barra.style.width = `${Math.min(100, meta.progresso)}%`;
+      barra.parentElement.className = `barra ${meta.atingiu ? "verde" : ""}`;
+
+      document.getElementById(idNota).textContent = meta.atingiu
+        ? `Atingida. Comissao atual de ${CRM.moeda(dados.comissao.valorTotal)}.`
+        : `Faltam ${CRM.moeda(meta.falta)} - ${CRM.moeda(necessario)} por dia.`;
+
+      const ganho = document.getElementById(idGanho);
+      ganho.textContent = `Fechando na meta: ${CRM.moeda(meta.previsaoSeAtingir)} (faixa ${CRM.percentual(simulacao.percentualFaixa)}${simulacao.bonusAtivo ? ` + bonus ${CRM.percentual(simulacao.percentualBonus)}` : ""})`;
+      ganho.className = `kpi-tag ${meta.atingiu ? "ok" : ""}`;
+    }
+
+    function montarDias(dados) {
+      const caixa = document.getElementById("dias3");
+      caixa.innerHTML = "";
+      const hoje = CRM.hojeISO();
+
+      dados.ultimos3.forEach((dia) => {
+        const item = document.createElement("div");
+        item.className = `dia-card${dia.data === hoje ? " hoje" : ""}`;
+        item.innerHTML = `
+          <div class="dia-label">${dia.data === hoje ? "Hoje" : dia.diaSemana} ${dia.rotulo}</div>
+          <div class="dia-valor">${CRM.moeda(dia.valor)}</div>
+        `;
+        caixa.appendChild(item);
+      });
+    }
+
+    function nomeDoMes(competencia) {
+      const [ano, mes] = competencia.split("-").map(Number);
+      const nome = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      return nome.charAt(0).toUpperCase() + nome.slice(1);
+    }
+
+    function desenharGrafico(dados) {
+      const largura = 820;
+      const altura = 340;
+      const margem = { topo: 22, direita: 18, baixo: 38, esquerda: 74 };
+      const areaL = largura - margem.esquerda - margem.direita;
+      const areaA = altura - margem.topo - margem.baixo;
+
+      const maiorAcumulado = dados.serie.reduce((max, ponto) => Math.max(max, ponto.acumulado), 0);
+      const teto = Math.max(dados.config.metaPessoal, dados.config.metaEstabelecida, maiorAcumulado, 1000) * 1.08;
+
+      const x = (dia) => margem.esquerda + ((dia - 1) / Math.max(1, dados.totalDias - 1)) * areaL;
+      const y = (valor) => margem.topo + areaA - (Math.min(valor, teto) / teto) * areaA;
+
+      const pontosReais = dados.serie.filter((ponto) => !ponto.futuro);
+      const linhaReal = pontosReais.map((ponto) => `${x(ponto.dia).toFixed(1)},${y(ponto.acumulado).toFixed(1)}`).join(" ");
+      const areaReal = pontosReais.length > 0
+        ? `${margem.esquerda},${(margem.topo + areaA).toFixed(1)} ${linhaReal} ${x(pontosReais[pontosReais.length - 1].dia).toFixed(1)},${(margem.topo + areaA).toFixed(1)}`
+        : "";
+
+      const ritmo = `${x(1).toFixed(1)},${y(dados.ajuste).toFixed(1)} ${x(dados.totalDias).toFixed(1)},${y(dados.config.metaEstabelecida).toFixed(1)}`;
+
+      let grades = "";
+      const passos = 4;
+      for (let i = 0; i <= passos; i += 1) {
+        const valor = (teto / passos) * i;
+        const posY = y(valor);
+        grades += `<line x1="${margem.esquerda}" y1="${posY.toFixed(1)}" x2="${largura - margem.direita}" y2="${posY.toFixed(1)}" stroke="#eef0f4" stroke-width="1"></line>`;
+        grades += `<text x="${margem.esquerda - 10}" y="${(posY + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="#7b8494">${CRM.moedaCurta(valor)}</text>`;
+      }
+
+      let rotulosX = "";
+      const intervalo = dados.totalDias > 20 ? 5 : 3;
+      for (let dia = 1; dia <= dados.totalDias; dia += intervalo) {
+        rotulosX += `<text x="${x(dia).toFixed(1)}" y="${altura - 14}" text-anchor="middle" font-size="11" fill="#7b8494">${dia}</text>`;
+      }
+
+      const ultimo = pontosReais[pontosReais.length - 1];
+      const marcador = ultimo
+        ? `<circle cx="${x(ultimo.dia).toFixed(1)}" cy="${y(ultimo.acumulado).toFixed(1)}" r="5" fill="#f97316" stroke="#fff" stroke-width="2"></circle>`
+        : "";
+
+      const linhaMetaEstab = y(dados.config.metaEstabelecida);
+      const linhaMetaPessoal = y(dados.config.metaPessoal);
+
+      document.getElementById("grafico").innerHTML = `
+        <svg viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Grafico de vendas acumuladas comparado a meta">
+          <defs>
+            <linearGradient id="areaLaranja" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f97316" stop-opacity="0.32"></stop>
+              <stop offset="100%" stop-color="#f97316" stop-opacity="0.02"></stop>
+            </linearGradient>
+          </defs>
+          ${grades}
+          ${areaReal ? `<polygon points="${areaReal}" fill="url(#areaLaranja)"></polygon>` : ""}
+          <line x1="${margem.esquerda}" y1="${linhaMetaEstab.toFixed(1)}" x2="${largura - margem.direita}" y2="${linhaMetaEstab.toFixed(1)}" stroke="#16a34a" stroke-width="2" stroke-dasharray="7 5"></line>
+          <text x="${largura - margem.direita}" y="${(linhaMetaEstab - 7).toFixed(1)}" text-anchor="end" font-size="11" font-weight="700" fill="#16a34a">Meta estabelecida ${CRM.moedaCurta(dados.config.metaEstabelecida)}</text>
+          <line x1="${margem.esquerda}" y1="${linhaMetaPessoal.toFixed(1)}" x2="${largura - margem.direita}" y2="${linhaMetaPessoal.toFixed(1)}" stroke="#2563eb" stroke-width="2" stroke-dasharray="7 5"></line>
+          <text x="${largura - margem.direita}" y="${(linhaMetaPessoal - 7).toFixed(1)}" text-anchor="end" font-size="11" font-weight="700" fill="#2563eb">Meta pessoal ${CRM.moedaCurta(dados.config.metaPessoal)}</text>
+          <polyline points="${ritmo}" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 6"></polyline>
+          ${linhaReal ? `<polyline points="${linhaReal}" fill="none" stroke="#f97316" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>` : ""}
+          ${marcador}
+          <line x1="${margem.esquerda}" y1="${margem.topo + areaA}" x2="${largura - margem.direita}" y2="${margem.topo + areaA}" stroke="#d5d8de" stroke-width="1"></line>
+          ${rotulosX}
+          <text x="${largura / 2}" y="${altura - 2}" text-anchor="middle" font-size="11" fill="#7b8494">Dias do mes</text>
+        </svg>
+      `;
     }
   </script>
 </body>
