@@ -503,7 +503,134 @@
 
   /* ---------------------------- Migracao -------------------------------- */
 
+  /* Vendas e folgas lancadas nas telas antigas (dashboard/vendas da versao 2.x). */
+  function migrarVendasAntigas() {
+    const bruto = lerJSON(`controleSecao_vendas_db_v1_${loginAtual()}`, null);
+    if (!Array.isArray(bruto) || bruto.length === 0) {
+      return 0;
+    }
+
+    const atuais = listarLancamentos();
+    const existentes = new Set(atuais.map((item) => `${item.data}|${item.valor}`));
+    let importados = 0;
+
+    bruto.forEach((venda) => {
+      const data = String(venda && venda.data ? venda.data : "").slice(0, 10);
+      const valor = Math.max(0, numero(venda && venda.valor));
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || valor <= 0) {
+        return;
+      }
+
+      if (existentes.has(`${data}|${valor}`)) {
+        return;
+      }
+
+      atuais.push({ id: gerarId(), data, valor, pecas: 0, obs: "importado da versao anterior" });
+      existentes.add(`${data}|${valor}`);
+      importados += 1;
+    });
+
+    if (importados > 0) {
+      gravarJSON(chave("lancamentos"), atuais);
+    }
+
+    return importados;
+  }
+
+  function migrarFolgasAntigas() {
+    const prefixo = `controleSecao_folgas_v1_${loginAtual()}_`;
+    const agenda = obterAgenda();
+    let importados = 0;
+
+    Object.keys(localStorage).forEach((chaveStorage) => {
+      if (chaveStorage.indexOf(prefixo) !== 0) {
+        return;
+      }
+
+      const competencia = chaveStorage.slice(prefixo.length);
+      const dias = lerJSON(chaveStorage, []);
+
+      if (!/^\d{4}-\d{2}$/.test(competencia) || !Array.isArray(dias)) {
+        return;
+      }
+
+      dias.forEach((dia) => {
+        const iso = `${competencia}-${String(dia).padStart(2, "0")}`;
+        if (!agenda[iso]) {
+          agenda[iso] = { tipo: "folga", turno: "integral", nota: "" };
+          importados += 1;
+        }
+      });
+    });
+
+    if (importados > 0) {
+      gravarJSON(chave("agenda"), agenda);
+    }
+
+    return importados;
+  }
+
+  /* Historico mensal digitado a mao, compartilhado com a versao anterior. */
+  function obterHistoricoManual() {
+    const dados = lerJSON(`controleSecao_historico_manual_v1_${loginAtual()}`, {});
+    return dados && typeof dados === "object" && !Array.isArray(dados) ? dados : {};
+  }
+
+  function salvarHistoricoManual(competencia, valor) {
+    const historico = obterHistoricoManual();
+    const total = Math.max(0, numero(valor));
+
+    if (!/^\d{4}-\d{2}$/.test(String(competencia || ""))) {
+      return { ok: false, mensagem: "Informe um mes valido." };
+    }
+
+    if (total <= 0) {
+      delete historico[competencia];
+    } else {
+      historico[competencia] = total;
+    }
+
+    gravarJSON(`controleSecao_historico_manual_v1_${loginAtual()}`, historico);
+    return { ok: true, mensagem: total > 0 ? "Historico salvo." : "Valor manual removido." };
+  }
+
+  function historicoMensal() {
+    const manual = obterHistoricoManual();
+    const porMes = {};
+
+    listarLancamentos().forEach((item) => {
+      const competencia = competenciaDe(item.data);
+      porMes[competencia] = numero(porMes[competencia]) + item.valor;
+    });
+
+    const meses = new Set(Object.keys(porMes).concat(Object.keys(manual)));
+    const config = obterConfig();
+
+    return Array.from(meses)
+      .sort()
+      .reverse()
+      .map((competencia) => {
+        const lancado = numero(porMes[competencia]);
+        const valorManual = numero(manual[competencia]);
+        const total = valorManual > 0 ? valorManual : lancado;
+        const comissao = calcularComissaoDetalhada(total, config);
+
+        return {
+          competencia,
+          lancado,
+          manual: valorManual,
+          total,
+          comissao,
+          atingiuMeta: config.metaEstabelecida > 0 && total >= config.metaEstabelecida
+        };
+      });
+  }
+
   function migrarDadosAntigos() {
+    migrarVendasAntigas();
+    migrarFolgasAntigas();
+
     const marca = chave("migracao");
     if (localStorage.getItem(marca) === "1") {
       return;
@@ -573,6 +700,9 @@
     salvarCampanha,
     removerCampanha,
     fraseDoDia,
+    obterHistoricoManual,
+    salvarHistoricoManual,
+    historicoMensal,
     migrarDadosAntigos
   };
 })();

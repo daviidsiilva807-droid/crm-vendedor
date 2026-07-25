@@ -67,6 +67,7 @@
   <div class="tabs">
     <button class="tab-btn ativo" type="button" data-aba="resumo">Resumo</button>
     <button class="tab-btn" type="button" data-aba="lancamentos">Lancamentos</button>
+    <button class="tab-btn" type="button" data-aba="historico">Historico mensal</button>
     <button class="tab-btn" type="button" data-aba="config">Configuracao de metas</button>
   </div>
 
@@ -229,6 +230,51 @@
     </div>
   </section>
 
+  <!-- ========================== HISTORICO ============================= -->
+  <section id="abaHistorico" class="painel-tab">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titulo">
+        <h3>Fechamento manual de um mes</h3>
+        <small>Use para meses antigos, sem lancamento dia a dia</small>
+      </div>
+      <div class="form-grid">
+        <div class="campo">
+          <label for="histMes">Mes</label>
+          <input id="histMes" type="month">
+        </div>
+        <div class="campo">
+          <label for="histValor">Faturamento do mes (R$)</label>
+          <input id="histValor" type="text" inputmode="decimal" value="0,00">
+        </div>
+      </div>
+      <div class="acoes" style="margin-top:14px">
+        <button class="btn btn-primario" type="button" onclick="salvarHistorico()">Salvar fechamento</button>
+      </div>
+      <p class="dica" style="margin-top:10px">O valor manual substitui a soma dos lancamentos daquele mes. Salve com zero para voltar a usar a soma.</p>
+      <div id="statusHistorico" class="status"></div>
+    </div>
+
+    <div class="tabela-wrap">
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>Faturamento</th>
+              <th>Origem</th>
+              <th>Faixa</th>
+              <th>Comissao</th>
+              <th>Meta</th>
+              <th>Acao</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaHistorico"></tbody>
+        </table>
+      </div>
+      <div id="vazioHistorico" class="vazio">Nenhum mes registrado ainda.</div>
+    </div>
+  </section>
+
   <!-- =========================== CONFIG =============================== -->
   <section id="abaConfig" class="painel-tab">
     <div class="card">
@@ -274,6 +320,7 @@
   </section>
 
   <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
   <script src="auth-db.js"></script>
   <script src="app-data.js"></script>
   <script src="app-shell.js"></script>
@@ -298,6 +345,7 @@
       const paineis = {
         resumo: document.getElementById("abaResumo"),
         lancamentos: document.getElementById("abaLancamentos"),
+        historico: document.getElementById("abaHistorico"),
         config: document.getElementById("abaConfig")
       };
 
@@ -311,7 +359,7 @@
     }
 
     function configurarCamposMoeda() {
-      ["lancValor", "cfgEstabelecida", "cfgPessoal", "cfgTicket", "cfgAjuste"].forEach((id) => {
+      ["lancValor", "histValor", "cfgEstabelecida", "cfgPessoal", "cfgTicket", "cfgAjuste"].forEach((id) => {
         const campo = document.getElementById(id);
         campo.addEventListener("input", () => {
           campo.value = CRM.numeroBR(CRM.moedaParaNumero(campo.value));
@@ -421,6 +469,69 @@
       montarTabelaMetas(dados);
       montarTabelaFaixas(dados);
       montarTabelaLancamentos(dados);
+      montarHistorico();
+    }
+
+    function salvarHistorico() {
+      const status = document.getElementById("statusHistorico");
+      const resultado = CRM.salvarHistoricoManual(
+        document.getElementById("histMes").value,
+        CRM.moedaParaNumero(document.getElementById("histValor").value)
+      );
+
+      status.textContent = resultado.mensagem;
+      status.className = `status ${resultado.ok ? "ok" : "error"}`;
+
+      if (resultado.ok) {
+        document.getElementById("histValor").value = "0,00";
+        atualizarTudo();
+      }
+    }
+
+    function nomeMes(competencia) {
+      const [ano, mes] = competencia.split("-").map(Number);
+      const nome = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      return nome.charAt(0).toUpperCase() + nome.slice(1);
+    }
+
+    function montarHistorico() {
+      const linhas = CRM.historicoMensal();
+      const corpo = document.getElementById("tabelaHistorico");
+      const vazio = document.getElementById("vazioHistorico");
+
+      corpo.innerHTML = "";
+      vazio.style.display = linhas.length === 0 ? "block" : "none";
+
+      linhas.forEach((linha) => {
+        const tr = document.createElement("tr");
+        if (linha.atingiuMeta) {
+          tr.className = "linha-atingida";
+        }
+
+        const acao = linha.manual > 0
+          ? `<button class="btn btn-perigo btn-mini" type="button" data-mes="${linha.competencia}">Remover manual</button>`
+          : '<span class="dica">-</span>';
+
+        tr.innerHTML = `
+          <td><strong>${nomeMes(linha.competencia)}</strong></td>
+          <td>${CRM.moeda(linha.total)}</td>
+          <td>${linha.manual > 0 ? "Fechamento manual" : `${CRM.moeda(linha.lancado)} em lancamentos`}</td>
+          <td>${CRM.percentual(linha.comissao.percentualFaixa)}${linha.comissao.bonusAtivo ? ` + ${CRM.percentual(linha.comissao.percentualBonus)}` : ""}</td>
+          <td><strong>${CRM.moeda(linha.comissao.valorTotal)}</strong></td>
+          <td><span class="pill ${linha.atingiuMeta ? "ok" : "wait"}">${linha.atingiuMeta ? "Batida" : "Nao batida"}</span></td>
+          <td>${acao}</td>
+        `;
+
+        const botao = tr.querySelector("button[data-mes]");
+        if (botao) {
+          botao.addEventListener("click", () => {
+            CRM.salvarHistoricoManual(linha.competencia, 0);
+            atualizarTudo();
+          });
+        }
+
+        corpo.appendChild(tr);
+      });
     }
 
     function preencherMeta(prefixo, meta, dados, porDia, idPill) {

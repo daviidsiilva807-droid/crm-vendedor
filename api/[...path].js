@@ -1,4 +1,5 @@
-const { tratarRequisicao } = require("../server");
+/* Publica na Vercel a API do backend opcional de login (server-auth.js). */
+const { tratarRequisicao } = require("../server-auth");
 
 module.exports = async (req, res) => {
   try {
