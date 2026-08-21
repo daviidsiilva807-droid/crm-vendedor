@@ -120,6 +120,33 @@
         <div id="listaVendedores"></div>
       </div>
     </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titulo">
+        <h3>Minha senha</h3>
+        <small>Vale apenas para este aparelho</small>
+      </div>
+
+      <div class="form-grid">
+        <div class="campo">
+          <label for="senhaAtual">Senha atual</label>
+          <input id="senhaAtual" type="password" placeholder="Digite a senha de hoje" autocomplete="current-password">
+        </div>
+        <div class="campo">
+          <label for="senhaNova">Nova senha</label>
+          <input id="senhaNova" type="password" placeholder="Minimo 6 caracteres" autocomplete="new-password">
+        </div>
+        <div class="campo">
+          <label for="senhaConfirma">Repita a nova senha</label>
+          <input id="senhaConfirma" type="password" placeholder="Digite de novo" autocomplete="new-password">
+        </div>
+      </div>
+
+      <div class="acoes" style="margin-top:14px">
+        <button class="btn btn-primario" type="button" onclick="trocarSenha()">Alterar senha</button>
+      </div>
+      <div id="statusSenha" class="status"></div>
+    </div>
   </div>
 
   <script src="app-config.js"></script>
@@ -152,6 +179,32 @@
       const status = document.getElementById("statusAdmin");
       status.textContent = mensagem;
       status.className = `status ${tipo}`;
+    }
+
+    function trocarSenha() {
+      const status = document.getElementById("statusSenha");
+      const atual = document.getElementById("senhaAtual");
+      const nova = document.getElementById("senhaNova");
+      const confirma = document.getElementById("senhaConfirma");
+
+      function responder(mensagem, tipo) {
+        status.textContent = mensagem;
+        status.className = `status ${tipo}`;
+      }
+
+      if (nova.value !== confirma.value) {
+        responder("As duas senhas novas precisam ser iguais.", "error");
+        return;
+      }
+
+      const resultado = AuthDB.alterarSenha(sessao.login, atual.value, nova.value);
+      if (!resultado.ok) {
+        responder(resultado.mensagem, "error");
+        return;
+      }
+
+      [atual, nova, confirma].forEach((campo) => { campo.value = ""; });
+      responder("Senha alterada. Use a nova senha no proximo acesso.", "ok");
     }
 
     function cadastrarVendedor() {
