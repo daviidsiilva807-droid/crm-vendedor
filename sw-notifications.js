@@ -14,6 +14,7 @@ const urlsCache = [
   '/app-shell.css',
   '/app-shell.js',
   '/app-data.js',
+  '/secao-escala.js',
   '/style.css',
   '/transitions.js',
   '/auth-db.js',
