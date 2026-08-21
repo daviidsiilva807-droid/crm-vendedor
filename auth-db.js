@@ -2,7 +2,10 @@
   const DB_KEY = "controleSecao_usuarios_v1";
   const SESSION_KEY = "controleSecao_sessao_v1";
   const ADMIN_LOGIN = "daviidsiilva807";
-  const ADMIN_SENHA = "L4ndeH4ck@100";
+  /* A senha do administrador nunca fica no codigo: o site e publico e
+     qualquer visitante consegue ler este arquivo. Ela e definida no
+     primeiro acesso de cada aparelho e guardada so no navegador. */
+  const SENHA_MINIMA = 6;
   const SESSAO_TTL_HORAS = 8;
   const DIA_EM_MS = 1000 * 60 * 60 * 24;
 
@@ -82,7 +85,6 @@
       if (atual.login === ADMIN_LOGIN) {
         return {
           ...atual,
-          senha: ADMIN_SENHA,
           papel: "admin",
           ativo: true,
           vitalicio: true,
@@ -171,7 +173,6 @@
     const idx = usuarios.findIndex((u) => normalizarLogin(u.login) === ADMIN_LOGIN);
     const adminBase = {
       login: ADMIN_LOGIN,
-      senha: ADMIN_SENHA,
       papel: "admin",
       agente: true,
       ativo: true,
@@ -221,10 +222,90 @@
     };
   }
 
+  /* Senha vazia significa "ainda nao definida neste aparelho", nunca uma
+     credencial valida. */
+  function temSenhaDefinida(usuario) {
+    return Boolean(usuario && String(usuario.senha || "").length > 0);
+  }
+
+  function precisaDefinirSenhaAdmin() {
+    garantirAdminPadrao();
+    return !temSenhaDefinida(obterUsuarioInterno(ADMIN_LOGIN));
+  }
+
+  function gravarSenha(loginNormalizado, novaSenha) {
+    const usuarios = sincronizarVencimentos();
+    const idx = usuarios.findIndex((u) => u.login === loginNormalizado);
+    if (idx < 0) {
+      return false;
+    }
+
+    usuarios[idx] = { ...usuarios[idx], senha: novaSenha };
+    salvarUsuarios(usuarios);
+    return true;
+  }
+
+  function validarNovaSenha(senha) {
+    const nova = String(senha || "");
+    if (nova.trim().length < SENHA_MINIMA) {
+      return { ok: false, mensagem: `A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres.` };
+    }
+    return { ok: true, senha: nova };
+  }
+
+  /* Primeiro acesso do aparelho: cria a senha do administrador. So funciona
+     enquanto nenhuma senha existir, para nao virar um jeito de resetar. */
+  function definirSenhaAdmin(novaSenha) {
+    garantirAdminPadrao();
+    if (!precisaDefinirSenhaAdmin()) {
+      return { ok: false, mensagem: "A senha do administrador ja foi definida neste aparelho." };
+    }
+
+    const validacao = validarNovaSenha(novaSenha);
+    if (!validacao.ok) {
+      return validacao;
+    }
+
+    gravarSenha(ADMIN_LOGIN, validacao.senha);
+    return { ok: true, mensagem: "Senha do administrador definida." };
+  }
+
+  function alterarSenha(login, senhaAtual, novaSenha) {
+    const loginNormalizado = normalizarLogin(login);
+    const usuario = obterUsuarioInterno(loginNormalizado);
+
+    if (!usuario) {
+      return { ok: false, mensagem: "Usuario nao encontrado." };
+    }
+    if (!temSenhaDefinida(usuario) || usuario.senha !== String(senhaAtual || "")) {
+      return { ok: false, mensagem: "Senha atual incorreta." };
+    }
+
+    const validacao = validarNovaSenha(novaSenha);
+    if (!validacao.ok) {
+      return validacao;
+    }
+    if (validacao.senha === usuario.senha) {
+      return { ok: false, mensagem: "A nova senha precisa ser diferente da atual." };
+    }
+
+    gravarSenha(loginNormalizado, validacao.senha);
+    return { ok: true, mensagem: "Senha alterada com sucesso." };
+  }
+
   function autenticar(login, senha) {
     garantirAdminPadrao();
     const usuario = obterUsuarioInterno(login);
-    if (!usuario || usuario.senha !== String(senha || "")) {
+
+    if (usuario && normalizarLogin(usuario.login) === ADMIN_LOGIN && !temSenhaDefinida(usuario)) {
+      return {
+        ok: false,
+        precisaDefinirSenha: true,
+        mensagem: "Primeiro acesso neste aparelho: defina a senha do administrador."
+      };
+    }
+
+    if (!usuario || !temSenhaDefinida(usuario) || usuario.senha !== String(senha || "")) {
       return { ok: false, mensagem: "Login ou senha invalidos." };
     }
 
@@ -487,6 +568,9 @@
   window.AuthDB = {
     garantirAdminPadrao,
     autenticar,
+    precisaDefinirSenhaAdmin,
+    definirSenhaAdmin,
+    alterarSenha,
     obterSessao,
     obterUsuario,
     obterStatusUsuario,

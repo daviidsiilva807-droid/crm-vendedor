@@ -171,25 +171,52 @@
 
   <section class="lado-form">
     <div class="caixa-login">
-      <h2>Entrar no sistema</h2>
-      <p class="sub">Use o login e a senha fornecidos pelo administrador.</p>
+      <!-- Login normal -->
+      <div id="blocoLogin">
+        <h2>Entrar no sistema</h2>
+        <p class="sub">Use o login e a senha fornecidos pelo administrador.</p>
 
-      <div class="campo">
-        <label for="login">Login</label>
-        <input id="login" type="text" placeholder="Digite seu login" autocomplete="username">
+        <div class="campo">
+          <label for="login">Login</label>
+          <input id="login" type="text" placeholder="Digite seu login" autocomplete="username">
+        </div>
+
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <input id="senha" type="password" placeholder="Digite sua senha" autocomplete="current-password">
+        </div>
+
+        <button class="btn-entrar" type="button" onclick="entrar()">Entrar</button>
+        <div id="statusLogin" class="status"></div>
+
+        <div class="rodape-login">
+          Problemas para acessar ou assinatura vencida?<br>
+          Fale com o administrador para liberar seu acesso.
+        </div>
       </div>
 
-      <div class="campo">
-        <label for="senha">Senha</label>
-        <input id="senha" type="password" placeholder="Digite sua senha" autocomplete="current-password">
-      </div>
+      <!-- Primeiro acesso do aparelho: o administrador cria a propria senha -->
+      <div id="blocoPrimeiroAcesso" style="display:none">
+        <h2>Primeiro acesso</h2>
+        <p class="sub">Este aparelho ainda nao tem senha de administrador. Crie a sua para comecar.</p>
 
-      <button class="btn-entrar" type="button" onclick="entrar()">Entrar</button>
-      <div id="statusLogin" class="status"></div>
+        <div class="campo">
+          <label for="novaSenhaAdmin">Nova senha</label>
+          <input id="novaSenhaAdmin" type="password" placeholder="Minimo de 6 caracteres" autocomplete="new-password">
+        </div>
 
-      <div class="rodape-login">
-        Problemas para acessar ou assinatura vencida?<br>
-        Fale com o administrador para liberar seu acesso.
+        <div class="campo">
+          <label for="confirmaSenhaAdmin">Repita a senha</label>
+          <input id="confirmaSenhaAdmin" type="password" placeholder="Digite de novo" autocomplete="new-password">
+        </div>
+
+        <button class="btn-entrar" type="button" onclick="criarSenhaAdmin()">Criar senha e entrar</button>
+        <div id="statusPrimeiroAcesso" class="status"></div>
+
+        <div class="rodape-login">
+          A senha fica guardada apenas neste navegador.<br>
+          Anote em lugar seguro: nao existe recuperacao por e-mail.
+        </div>
       </div>
     </div>
   </section>
@@ -210,6 +237,12 @@
       status.className = "status error";
     }
 
+    function mostrarPrimeiroAcesso() {
+      document.getElementById("blocoLogin").style.display = "none";
+      document.getElementById("blocoPrimeiroAcesso").style.display = "block";
+      document.getElementById("novaSenhaAdmin").focus();
+    }
+
     function entrar() {
       const login = document.getElementById("login").value.trim();
       const senha = document.getElementById("senha").value;
@@ -221,7 +254,41 @@
 
       const resultado = AuthDB.autenticar(login, senha);
       if (!resultado.ok) {
+        if (resultado.precisaDefinirSenha) {
+          mostrarPrimeiroAcesso();
+          return;
+        }
         mostrarErro(resultado.mensagem);
+        return;
+      }
+
+      window.location.href = "dashboard.html";
+    }
+
+    function criarSenhaAdmin() {
+      const status = document.getElementById("statusPrimeiroAcesso");
+      const nova = document.getElementById("novaSenhaAdmin").value;
+      const confirma = document.getElementById("confirmaSenhaAdmin").value;
+
+      function falhar(mensagem) {
+        status.textContent = mensagem;
+        status.className = "status error";
+      }
+
+      if (nova !== confirma) {
+        falhar("As duas senhas precisam ser iguais.");
+        return;
+      }
+
+      const resultado = AuthDB.definirSenhaAdmin(nova);
+      if (!resultado.ok) {
+        falhar(resultado.mensagem);
+        return;
+      }
+
+      const login = AuthDB.autenticar(document.getElementById("login").value.trim(), nova);
+      if (!login.ok) {
+        falhar(login.mensagem);
         return;
       }
 
@@ -232,6 +299,17 @@
       document.getElementById(id).addEventListener("keydown", (evento) => {
         if (evento.key === "Enter") {
           entrar();
+        }
+      });
+    });
+
+    /* A tela de primeiro acesso nao aparece sozinha: so depois que alguem
+       tenta entrar com o login de administrador neste aparelho. Assim um
+       vendedor que abre o link continua vendo apenas o login comum. */
+    ["novaSenhaAdmin", "confirmaSenhaAdmin"].forEach((id) => {
+      document.getElementById(id).addEventListener("keydown", (evento) => {
+        if (evento.key === "Enter") {
+          criarSenhaAdmin();
         }
       });
     });
