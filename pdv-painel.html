@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Painel - Vendas</title>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Painel de vendas</h1>
+    <p>Andamento dos pedidos de hoje: quantidade, faturamento e a comparacao entre venda online e presencial.</p>
+  </div>
+
+  <div class="grid grid-kpi" style="margin-bottom:18px">
+    <article class="kpi">
+      <div class="kpi-label">Pedidos hoje</div>
+      <div id="kpiPedidos" class="kpi-valor">0</div>
+      <div class="kpi-nota" id="kpiPedidosNota">-</div>
+    </article>
+    <article class="kpi verde">
+      <div class="kpi-label">Faturamento hoje</div>
+      <div id="kpiFaturamento" class="kpi-valor">R$ 0,00</div>
+      <div class="kpi-nota">Soma de todos os pedidos do dia</div>
+    </article>
+    <article class="kpi azul">
+      <div class="kpi-label">Ticket medio</div>
+      <div id="kpiTicket" class="kpi-valor">R$ 0,00</div>
+      <div class="kpi-nota">Valor medio por pedido hoje</div>
+    </article>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-titulo">
+        <h3>Faturamento por horario</h3>
+        <small>Hoje</small>
+      </div>
+      <div id="graficoHorario" class="grafico-box"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">
+        <h3>Online x Presencial</h3>
+        <small>Hoje</small>
+      </div>
+      <div id="graficoCanal" class="grafico-box"></div>
+    </div>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="pdv-data.js"></script>
+  <script src="pdv-shell.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+
+    if (sessao) {
+      render();
+    }
+
+    function render() {
+      const metricas = PDV.metricasDoDia(CRM.hojeISO());
+
+      document.getElementById("kpiPedidos").textContent = metricas.quantidade;
+      document.getElementById("kpiPedidosNota").textContent =
+        `${metricas.porCanal.online.quantidade} online - ${metricas.porCanal.presencial.quantidade} presencial`;
+      document.getElementById("kpiFaturamento").textContent = CRM.moeda(metricas.faturamento);
+      document.getElementById("kpiTicket").textContent = CRM.moeda(metricas.ticketMedio);
+
+      montarGraficoHorario(metricas);
+      montarGraficoCanal(metricas);
+    }
+
+    function montarGraficoHorario(metricas) {
+      const horas = [];
+      for (let h = 0; h <= 23; h += 1) {
+        horas.push(String(h).padStart(2, "0"));
+      }
+
+      const valores = horas.map((hora) => metricas.porHora[hora] || 0);
+      const maxValor = Math.max(1, ...valores);
+
+      const largura = 760;
+      const altura = 220;
+      const margem = { esquerda: 16, direita: 16, topo: 14, baixo: 28 };
+      const areaW = largura - margem.esquerda - margem.direita;
+      const areaH = altura - margem.topo - margem.baixo;
+      const larguraSlot = areaW / horas.length;
+
+      let barras = "";
+      let rotulos = "";
+
+      horas.forEach((hora, indice) => {
+        const valor = valores[indice];
+        const alturaBarra = maxValor > 0 ? (valor / maxValor) * areaH : 0;
+        const x = margem.esquerda + indice * larguraSlot + larguraSlot * 0.18;
+        const largura2 = larguraSlot * 0.64;
+        const y = margem.topo + (areaH - alturaBarra);
+
+        barras += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${largura2.toFixed(1)}" height="${Math.max(0, alturaBarra).toFixed(1)}" rx="3" fill="#f97316"></rect>`;
+
+        if (indice % 2 === 0) {
+          const xRotulo = margem.esquerda + indice * larguraSlot + larguraSlot / 2;
+          rotulos += `<text x="${xRotulo.toFixed(1)}" y="${altura - 10}" text-anchor="middle" font-size="10.5" fill="#7b8494">${hora}h</text>`;
+        }
+      });
+
+      const linhaBase = margem.topo + areaH;
+
+      document.getElementById("graficoHorario").innerHTML = `
+        <svg viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Faturamento por horario do dia">
+          <line x1="${margem.esquerda}" y1="${linhaBase.toFixed(1)}" x2="${largura - margem.direita}" y2="${linhaBase.toFixed(1)}" stroke="#d5d8de" stroke-width="1"></line>
+          ${barras}
+          ${rotulos}
+        </svg>
+      `;
+    }
+
+    function montarGraficoCanal(metricas) {
+      const dados = [
+        { rotulo: "Presencial", valor: metricas.porCanal.presencial.valor, quantidade: metricas.porCanal.presencial.quantidade, cor: "#f97316" },
+        { rotulo: "Online", valor: metricas.porCanal.online.valor, quantidade: metricas.porCanal.online.quantidade, cor: "#2563eb" }
+      ];
+
+      const maxValor = Math.max(1, ...dados.map((item) => item.valor));
+      const largura = 760;
+      const alturaBarra = 36;
+      const espaco = 30;
+      const margem = { esquerda: 96, direita: 150, topo: 20 };
+      const areaW = largura - margem.esquerda - margem.direita;
+      const altura = margem.topo * 2 + dados.length * alturaBarra + (dados.length - 1) * espaco;
+
+      let conteudo = "";
+
+      dados.forEach((item, indice) => {
+        const y = margem.topo + indice * (alturaBarra + espaco);
+        const w = maxValor > 0 ? (item.valor / maxValor) * areaW : 0;
+        const quantidadeTexto = `${item.quantidade} pedido${item.quantidade === 1 ? "" : "s"}`;
+
+        conteudo += `
+          <text x="${margem.esquerda - 12}" y="${(y + alturaBarra / 2 + 4).toFixed(1)}" text-anchor="end" font-size="13" font-weight="700" fill="#17202a">${item.rotulo}</text>
+          <rect x="${margem.esquerda}" y="${y.toFixed(1)}" width="${Math.max(2, w).toFixed(1)}" height="${alturaBarra}" rx="7" fill="${item.cor}"></rect>
+          <text x="${(margem.esquerda + Math.max(2, w) + 10).toFixed(1)}" y="${(y + alturaBarra / 2 + 4).toFixed(1)}" font-size="12.5" fill="#4b5563">${CRM.moeda(item.valor)} (${quantidadeTexto})</text>
+        `;
+      });
+
+      document.getElementById("graficoCanal").innerHTML = `
+        <svg viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Comparacao entre venda online e presencial">
+          ${conteudo}
+        </svg>
+      `;
+    }
+  </script>
+</body>
+</html>

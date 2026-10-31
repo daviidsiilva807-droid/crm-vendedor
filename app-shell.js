@@ -117,6 +117,7 @@
     boxUsuario.innerHTML = `
       <div class="app-usuario-nome">${sessao && sessao.login ? sessao.login : "Visitante"}</div>
       <div class="app-usuario-papel">${admin ? "Administrador" : "Vendedor"}</div>
+      <a class="app-sair" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box" href="escolha.html">Trocar de app</a>
       <button class="app-sair" type="button" id="appBtnSair">Sair da conta</button>
     `;
 

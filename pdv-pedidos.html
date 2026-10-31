@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Pedidos do dia - Vendas</title>
+  <style>
+    .filtro-data {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filtro-data input {
+      max-width: 180px;
+    }
+
+    .cartao-pedido {
+      background: var(--superficie);
+      border: 1px solid var(--borda);
+      border-radius: var(--raio);
+      box-shadow: var(--sombra);
+      padding: 14px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .cartao-pedido .info { flex: 1 1 220px; min-width: 0; }
+    .cartao-pedido .info .cliente { font-weight: 700; font-size: 14.5px; }
+    .cartao-pedido .info .detalhe { font-size: 13px; color: var(--texto-medio); margin-top: 3px; }
+    .cartao-pedido .valor { font-weight: 800; font-size: 15px; white-space: nowrap; }
+    .cartao-pedido .selos { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cartao-pedido .acoes-pedido { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .cartao-pedido select { min-height: 38px; padding: 6px 10px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Pedidos do dia</h1>
+    <p>Acompanhe os pedidos organizados por status. Mude o status pelo seletor de cada pedido conforme ele avanca no atendimento.</p>
+  </div>
+
+  <div class="filtro-data">
+    <label for="filtroData" style="font-size:13px;font-weight:700;color:var(--texto-medio)">Data</label>
+    <input id="filtroData" type="date">
+    <button class="btn btn-neutro btn-mini" type="button" id="btnHoje">Hoje</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn ativo" type="button" data-aba="finalizado">Finalizados (<span id="contFinalizado">0</span>)</button>
+    <button class="tab-btn" type="button" data-aba="entrega">Para entrega (<span id="contEntrega">0</span>)</button>
+    <button class="tab-btn" type="button" data-aba="reserva">Para reserva (<span id="contReserva">0</span>)</button>
+    <button class="tab-btn" type="button" data-aba="retirada">Para retirada (<span id="contRetirada">0</span>)</button>
+  </div>
+
+  <section id="abaFinalizado" class="painel-tab ativo"></section>
+  <section id="abaEntrega" class="painel-tab"></section>
+  <section id="abaReserva" class="painel-tab"></section>
+  <section id="abaRetirada" class="painel-tab"></section>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="pdv-data.js"></script>
+  <script src="pdv-shell.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+
+    const PAINEIS = {
+      finalizado: document.getElementById("abaFinalizado"),
+      entrega: document.getElementById("abaEntrega"),
+      reserva: document.getElementById("abaReserva"),
+      retirada: document.getElementById("abaRetirada")
+    };
+
+    if (sessao) {
+      iniciar();
+    }
+
+    function iniciar() {
+      document.getElementById("filtroData").value = CRM.hojeISO();
+      configurarAbas();
+
+      document.getElementById("filtroData").addEventListener("change", render);
+      document.getElementById("btnHoje").addEventListener("click", () => {
+        document.getElementById("filtroData").value = CRM.hojeISO();
+        render();
+      });
+
+      render();
+    }
+
+    function configurarAbas() {
+      const botoes = document.querySelectorAll(".tab-btn");
+      botoes.forEach((botao) => {
+        botao.addEventListener("click", () => {
+          const alvo = botao.dataset.aba;
+          botoes.forEach((outro) => outro.classList.toggle("ativo", outro === botao));
+          Object.keys(PAINEIS).forEach((chave) => PAINEIS[chave].classList.toggle("ativo", chave === alvo));
+        });
+      });
+    }
+
+    function render() {
+      const data = document.getElementById("filtroData").value || CRM.hojeISO();
+      const pedidos = PDV.listarPedidos({ data });
+
+      Object.keys(PAINEIS).forEach((statusChave) => {
+        const lista = pedidos.filter((pedido) => pedido.status === statusChave);
+        renderLista(PAINEIS[statusChave], lista);
+      });
+
+      document.getElementById("contFinalizado").textContent = pedidos.filter((p) => p.status === "finalizado").length;
+      document.getElementById("contEntrega").textContent = pedidos.filter((p) => p.status === "entrega").length;
+      document.getElementById("contReserva").textContent = pedidos.filter((p) => p.status === "reserva").length;
+      document.getElementById("contRetirada").textContent = pedidos.filter((p) => p.status === "retirada").length;
+    }
+
+    function renderLista(painel, lista) {
+      painel.innerHTML = "";
+
+      if (lista.length === 0) {
+        painel.innerHTML = '<div class="vazio">Nenhum pedido neste status para a data selecionada.</div>';
+        return;
+      }
+
+      lista.forEach((pedido) => {
+        const cartao = document.createElement("div");
+        cartao.className = "cartao-pedido";
+
+        const seloCanal = pedido.canal === "online"
+          ? '<span class="pill laranja">Online</span>'
+          : '<span class="pill">Presencial</span>';
+
+        const pagamento = pedido.pagamento.forma === "cartao"
+          ? `Cartão em ${pedido.pagamento.parcelas}x`
+          : PDV.FORMAS_PAGAMENTO[pedido.pagamento.forma];
+
+        cartao.innerHTML = `
+          <div class="info">
+            <div class="cliente">${pedido.clienteNome}</div>
+            <div class="detalhe">${PDV.mascararTelefone(pedido.clienteTelefone)} - ${PDV.CATEGORIAS[pedido.categoria]}: ${pedido.produto}</div>
+            <div class="detalhe">${pagamento} - ${pedido.hora}${pedido.endereco ? ` - ${pedido.endereco}` : ""}</div>
+          </div>
+          <div class="selos">${seloCanal}</div>
+          <div class="valor">${CRM.moeda(pedido.valor)}</div>
+          <div class="acoes-pedido">
+            <select data-id="${pedido.id}" class="seletorStatus">
+              ${Object.keys(PDV.STATUS_PEDIDO).map((chave) => `<option value="${chave}" ${chave === pedido.status ? "selected" : ""}>${PDV.STATUS_PEDIDO[chave].rotulo}</option>`).join("")}
+            </select>
+            <button class="btn btn-perigo btn-mini" type="button" data-id="${pedido.id}">Excluir</button>
+          </div>
+        `;
+
+        cartao.querySelector(".seletorStatus").addEventListener("change", (evento) => {
+          PDV.atualizarStatus(pedido.id, evento.target.value);
+          render();
+        });
+
+        cartao.querySelector(".btn-perigo").addEventListener("click", () => {
+          if (confirm("Excluir este pedido?")) {
+            PDV.removerPedido(pedido.id);
+            render();
+          }
+        });
+
+        painel.appendChild(cartao);
+      });
+    }
+  </script>
+</body>
+</html>

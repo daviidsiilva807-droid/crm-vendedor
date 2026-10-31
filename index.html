@@ -228,7 +228,7 @@
     AuthDB.garantirAdminPadrao();
 
     if (AuthDB.obterSessao()) {
-      window.location.href = "dashboard.html";
+      window.location.href = "escolha.html";
     }
 
     function mostrarErro(mensagem) {
@@ -262,7 +262,7 @@
         return;
       }
 
-      window.location.href = "dashboard.html";
+      window.location.href = "escolha.html";
     }
 
     function criarSenhaAdmin() {
@@ -292,7 +292,7 @@
         return;
       }
 
-      window.location.href = "dashboard.html";
+      window.location.href = "escolha.html";
     }
 
     ["login", "senha"].forEach((id) => {
