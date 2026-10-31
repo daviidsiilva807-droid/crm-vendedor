@@ -1,0 +1,173 @@
+/* ==========================================================================
+   Modulo VENDAS - Shell da aplicacao (menu lateral + topo)
+   Mesmo app-shell.css do app de Metas, com um menu proprio deste modulo.
+   Basta incluir app-shell.css + pdv-shell.js em qualquer pagina do modulo.
+   ========================================================================== */
+
+(function () {
+  const ITENS = [
+    { grupo: "Vendas" },
+    { href: "pdv-painel.html", icone: "&#128202;", texto: "Painel", titulo: "Painel de vendas" },
+    { href: "pdv-novo-pedido.html", icone: "&#128221;", texto: "Novo pedido", titulo: "Novo pedido" },
+    { href: "pdv-pedidos.html", icone: "&#128230;", texto: "Pedidos do dia", titulo: "Pedidos do dia" }
+  ];
+
+  function paginaAtual() {
+    const caminho = window.location.pathname.split("/").pop();
+    return caminho || "pdv-painel.html";
+  }
+
+  function lerSessaoLocal() {
+    try {
+      const bruto = localStorage.getItem("controleSecao_sessao_v1");
+      return bruto ? JSON.parse(bruto) : null;
+    } catch (erro) {
+      return null;
+    }
+  }
+
+  function dataExtenso() {
+    return new Date().toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric"
+    });
+  }
+
+  function construir() {
+    if (document.querySelector(".app-shell")) {
+      return;
+    }
+
+    const sessao = lerSessaoLocal();
+    const atual = paginaAtual();
+
+    const shell = document.createElement("div");
+    shell.className = "app-shell";
+
+    /* ------------------------------ Menu -------------------------------- */
+    const aside = document.createElement("aside");
+    aside.className = "app-sidebar";
+    aside.id = "appSidebar";
+
+    const marca = document.createElement("div");
+    marca.className = "app-brand";
+    marca.innerHTML = `
+      <div class="app-brand-logo">VD</div>
+      <div class="app-brand-txt">
+        <strong>Vendas</strong>
+        <span>Ponto de venda</span>
+      </div>
+    `;
+
+    const nav = document.createElement("nav");
+    nav.className = "app-nav";
+
+    let tituloPagina = "Painel";
+
+    ITENS.forEach((item) => {
+      if (item.grupo) {
+        const titulo = document.createElement("div");
+        titulo.className = "app-nav-titulo";
+        titulo.textContent = item.grupo;
+        nav.appendChild(titulo);
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.href = item.href;
+      link.innerHTML = `<span class="ico">${item.icone}</span><span>${item.texto}</span>`;
+
+      if (item.href === atual) {
+        link.classList.add("ativo");
+        tituloPagina = item.titulo;
+      }
+
+      nav.appendChild(link);
+    });
+
+    const boxUsuario = document.createElement("div");
+    boxUsuario.className = "app-usuario";
+    boxUsuario.innerHTML = `
+      <div class="app-usuario-nome">${sessao && sessao.login ? sessao.login : "Visitante"}</div>
+      <div class="app-usuario-papel">Modulo Vendas</div>
+      <a class="app-sair" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box" href="escolha.html">Trocar de app</a>
+      <button class="app-sair" type="button" id="appBtnSair">Sair da conta</button>
+    `;
+
+    aside.appendChild(marca);
+    aside.appendChild(nav);
+    aside.appendChild(boxUsuario);
+
+    /* ------------------------------ Corpo ------------------------------- */
+    const corpo = document.createElement("div");
+    corpo.className = "app-body";
+
+    const topo = document.createElement("header");
+    topo.className = "app-topbar";
+    topo.innerHTML = `
+      <button class="app-menu-btn" type="button" id="appBtnMenu" aria-label="Abrir menu">&#9776;</button>
+      <h2>${tituloPagina}</h2>
+      <div class="data-hoje">${dataExtenso()}</div>
+    `;
+
+    const conteudo = document.createElement("main");
+    conteudo.className = "app-content";
+    conteudo.id = "appContent";
+
+    const filhos = Array.prototype.slice.call(document.body.childNodes);
+    filhos.forEach((no) => {
+      if (no.nodeType === 1 && (no.tagName === "SCRIPT" || no.tagName === "TEMPLATE")) {
+        return;
+      }
+      if (no.nodeType === 8) {
+        return;
+      }
+      conteudo.appendChild(no);
+    });
+
+    corpo.appendChild(topo);
+    corpo.appendChild(conteudo);
+
+    const overlay = document.createElement("div");
+    overlay.className = "app-overlay";
+    overlay.id = "appOverlay";
+
+    shell.appendChild(aside);
+    shell.appendChild(corpo);
+
+    document.body.insertBefore(shell, document.body.firstChild);
+    document.body.appendChild(overlay);
+
+    /* ---------------------------- Interacao ----------------------------- */
+    function alternarMenu(forcar) {
+      const abrir = forcar === undefined ? !aside.classList.contains("aberto") : forcar;
+      aside.classList.toggle("aberto", abrir);
+      overlay.classList.toggle("aberto", abrir);
+    }
+
+    document.getElementById("appBtnMenu").addEventListener("click", () => alternarMenu());
+    overlay.addEventListener("click", () => alternarMenu(false));
+    nav.addEventListener("click", (evento) => {
+      if (evento.target.closest("a")) {
+        alternarMenu(false);
+      }
+    });
+
+    document.getElementById("appBtnSair").addEventListener("click", () => {
+      if (window.AuthDB && typeof window.AuthDB.sair === "function") {
+        window.AuthDB.sair();
+      }
+      window.location.href = "index.html";
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", construir);
+  } else {
+    construir();
+  }
+
+  window.PdvShell = { construir };
+})();

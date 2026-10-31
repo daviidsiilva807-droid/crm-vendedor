@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Novo pedido - Vendas</title>
+  <style>
+    .grupo-toggle {
+      display: flex;
+      gap: 10px;
+    }
+
+    .grupo-toggle .tab-btn {
+      flex: 1 1 0;
+    }
+
+    .campo-condicional {
+      display: none;
+    }
+
+    .campo-condicional.visivel {
+      display: flex;
+    }
+
+    .painel + .painel {
+      margin-top: 16px;
+    }
+
+    .painel h3 {
+      margin: 0 0 14px;
+      font-size: 15.5px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Novo pedido</h1>
+    <p>Cadastre o cliente e os dados do pedido. Se o CPF ja estiver cadastrado, os outros dados do cliente sao preenchidos automaticamente.</p>
+  </div>
+
+  <form id="formPedido" autocomplete="off">
+    <div class="painel">
+      <h3>Dados do cliente</h3>
+      <div class="form-grid">
+        <div class="campo">
+          <label for="cpf">CPF *</label>
+          <input id="cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" maxlength="14">
+        </div>
+        <div class="campo">
+          <label for="nome">Nome *</label>
+          <input id="nome" type="text" placeholder="Nome completo">
+        </div>
+        <div class="campo">
+          <label for="telefone">Telefone *</label>
+          <input id="telefone" type="tel" placeholder="(00) 00000-0000" maxlength="15">
+        </div>
+        <div class="campo">
+          <label for="email">Email</label>
+          <input id="email" type="text" placeholder="email@exemplo.com">
+        </div>
+        <div class="campo">
+          <label for="instagram">Instagram</label>
+          <input id="instagram" type="text" placeholder="@usuario">
+        </div>
+      </div>
+      <div id="avisoCliente" class="dica" style="margin-top:10px"></div>
+    </div>
+
+    <div class="painel">
+      <h3>Tipo de venda</h3>
+      <div class="grupo-toggle">
+        <button class="tab-btn ativo" type="button" data-canal="presencial">Presencial</button>
+        <button class="tab-btn" type="button" data-canal="online">Online</button>
+      </div>
+
+      <div id="campoEndereco" class="campo campo-condicional" style="margin-top:14px">
+        <label for="endereco">Endereco de entrega *</label>
+        <input id="endereco" type="text" placeholder="Rua, numero, bairro, cidade">
+      </div>
+    </div>
+
+    <div class="painel">
+      <h3>Produto desejado</h3>
+      <div class="form-grid">
+        <div class="campo">
+          <label for="categoria">Categoria *</label>
+          <select id="categoria">
+            <option value="tenis">Tênis</option>
+            <option value="vestuario">Vestuário</option>
+            <option value="acessorio">Acessório</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="produto">Produto *</label>
+          <input id="produto" type="text" placeholder="Ex.: Tenis Adidas Runfalcon 3">
+        </div>
+        <div class="campo">
+          <label for="valor">Valor *</label>
+          <input id="valor" type="text" inputmode="numeric" placeholder="0,00">
+        </div>
+      </div>
+    </div>
+
+    <div class="painel">
+      <h3>Pagamento e status do pedido</h3>
+      <div class="form-grid">
+        <div class="campo">
+          <label for="formaPagamento">Forma de pagamento *</label>
+          <select id="formaPagamento">
+            <option value="cartao">Cartão</option>
+            <option value="pix">Pix</option>
+            <option value="link">Link de pagamento</option>
+          </select>
+        </div>
+        <div id="campoParcelas" class="campo campo-condicional">
+          <label for="parcelas">Quantas vezes</label>
+          <input id="parcelas" type="number" min="1" max="12" value="1">
+        </div>
+        <div class="campo">
+          <label for="status">Status do pedido *</label>
+          <select id="status">
+            <option value="finalizado">Finalizado</option>
+            <option value="entrega">Para entrega</option>
+            <option value="reserva">Para reserva</option>
+            <option value="retirada">Para retirada</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="acoes" style="margin-top:18px">
+      <button class="btn btn-primario" type="submit">Registrar pedido</button>
+      <button class="btn btn-neutro" type="button" id="btnLimpar">Limpar formulario</button>
+    </div>
+    <div id="statusForm" class="status"></div>
+  </form>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="pdv-data.js"></script>
+  <script src="pdv-shell.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+
+    if (sessao) {
+      iniciar();
+    }
+
+    let canalAtual = "presencial";
+
+    function iniciar() {
+      configurarMascaras();
+      configurarCanal();
+      configurarPagamento();
+      configurarBusca();
+
+      document.getElementById("formPedido").addEventListener("submit", (evento) => {
+        evento.preventDefault();
+        registrar();
+      });
+
+      document.getElementById("btnLimpar").addEventListener("click", limparFormulario);
+    }
+
+    function configurarMascaras() {
+      const campoCpf = document.getElementById("cpf");
+      campoCpf.addEventListener("input", () => {
+        campoCpf.value = PDV.mascararCPF(campoCpf.value);
+      });
+
+      const campoTelefone = document.getElementById("telefone");
+      campoTelefone.addEventListener("input", () => {
+        campoTelefone.value = PDV.mascararTelefone(campoTelefone.value);
+      });
+
+      const campoValor = document.getElementById("valor");
+      campoValor.addEventListener("input", () => {
+        campoValor.value = CRM.numeroBR(CRM.moedaParaNumero(campoValor.value));
+      });
+      campoValor.value = "0,00";
+    }
+
+    function configurarBusca() {
+      document.getElementById("cpf").addEventListener("blur", () => {
+        const digitos = PDV.somenteDigitos(document.getElementById("cpf").value);
+        const aviso = document.getElementById("avisoCliente");
+
+        if (digitos.length !== 11) {
+          aviso.textContent = "";
+          return;
+        }
+
+        const cliente = PDV.buscarClientePorCpf(digitos);
+        if (cliente) {
+          document.getElementById("nome").value = cliente.nome;
+          document.getElementById("telefone").value = PDV.mascararTelefone(cliente.telefone);
+          document.getElementById("email").value = cliente.email;
+          document.getElementById("instagram").value = cliente.instagram;
+          aviso.textContent = "Cliente ja cadastrado: dados preenchidos automaticamente.";
+        } else {
+          aviso.textContent = "Cliente novo: preencha os dados para cadastrar.";
+        }
+      });
+    }
+
+    function configurarCanal() {
+      const botoes = document.querySelectorAll("[data-canal]");
+      const campoEndereco = document.getElementById("campoEndereco");
+
+      botoes.forEach((botao) => {
+        botao.addEventListener("click", () => {
+          canalAtual = botao.dataset.canal;
+          botoes.forEach((outro) => outro.classList.toggle("ativo", outro === botao));
+          campoEndereco.classList.toggle("visivel", canalAtual === "online");
+        });
+      });
+    }
+
+    function configurarPagamento() {
+      const select = document.getElementById("formaPagamento");
+      const campoParcelas = document.getElementById("campoParcelas");
+
+      function atualizar() {
+        campoParcelas.classList.toggle("visivel", select.value === "cartao");
+      }
+
+      select.addEventListener("change", atualizar);
+      atualizar();
+    }
+
+    function registrar() {
+      const status = document.getElementById("statusForm");
+
+      const resultado = PDV.registrarPedido(
+        {
+          nome: document.getElementById("nome").value,
+          cpf: document.getElementById("cpf").value,
+          telefone: document.getElementById("telefone").value,
+          email: document.getElementById("email").value,
+          instagram: document.getElementById("instagram").value
+        },
+        {
+          canal: canalAtual,
+          endereco: document.getElementById("endereco").value,
+          categoria: document.getElementById("categoria").value,
+          produto: document.getElementById("produto").value,
+          valor: CRM.moedaParaNumero(document.getElementById("valor").value),
+          pagamento: {
+            forma: document.getElementById("formaPagamento").value,
+            parcelas: document.getElementById("parcelas").value
+          },
+          status: document.getElementById("status").value
+        }
+      );
+
+      if (!resultado.ok) {
+        status.textContent = resultado.mensagem;
+        status.className = "status error";
+        return;
+      }
+
+      status.textContent = `Pedido de ${CRM.moeda(resultado.pedido.valor)} registrado para ${resultado.cliente.nome}.`;
+      status.className = "status ok";
+      limparFormulario();
+    }
+
+    function limparFormulario() {
+      document.getElementById("formPedido").reset();
+      document.getElementById("valor").value = "0,00";
+      document.getElementById("parcelas").value = "1";
+      document.getElementById("avisoCliente").textContent = "";
+
+      canalAtual = "presencial";
+      document.querySelectorAll("[data-canal]").forEach((botao) => {
+        botao.classList.toggle("ativo", botao.dataset.canal === "presencial");
+      });
+      document.getElementById("campoEndereco").classList.remove("visivel");
+
+      configurarPagamento();
+    }
+  </script>
+</body>
+</html>

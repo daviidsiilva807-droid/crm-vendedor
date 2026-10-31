@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Escolher modulo - Controle de Secao</title>
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topo-escolha {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 24px;
+    }
+
+    .topo-escolha .quem {
+      font-size: 13.5px;
+      color: var(--texto-medio);
+    }
+
+    .topo-escolha .quem strong {
+      color: var(--texto);
+    }
+
+    .btn-sair-topo {
+      min-height: 38px;
+      padding: 8px 14px;
+      border-radius: var(--raio-sm);
+      border: 1px solid var(--borda-forte);
+      background: #fff;
+      color: var(--texto);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .area-escolha {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .bloco-escolha {
+      width: 100%;
+      max-width: 760px;
+      text-align: center;
+    }
+
+    .bloco-escolha h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      letter-spacing: -0.02em;
+    }
+
+    .bloco-escolha p {
+      margin: 0 0 30px;
+      color: var(--texto-medio);
+      font-size: 14.5px;
+    }
+
+    .cartoes-modulo {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .cartao-modulo {
+      display: block;
+      text-decoration: none;
+      border-radius: var(--raio);
+      padding: 30px 24px;
+      background: var(--superficie);
+      border: 1px solid var(--borda);
+      box-shadow: var(--sombra);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      color: var(--texto);
+    }
+
+    .cartao-modulo:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--sombra-forte);
+    }
+
+    .cartao-modulo .icone {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 16px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      background: var(--laranja-suave);
+      color: var(--laranja-forte);
+    }
+
+    .cartao-modulo h2 {
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .cartao-modulo p {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--texto-medio);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <header class="topo-escolha">
+    <div class="quem">Logado como <strong id="nomeUsuario">-</strong></div>
+    <button class="btn-sair-topo" type="button" id="btnSairTopo">Sair da conta</button>
+  </header>
+
+  <div class="area-escolha">
+    <div class="bloco-escolha">
+      <h1>O que voce quer abrir?</h1>
+      <p>Escolha o modulo para continuar. Voce pode trocar de modulo a qualquer momento pelo menu lateral.</p>
+
+      <div class="cartoes-modulo">
+        <a class="cartao-modulo" href="dashboard.html">
+          <div class="icone">&#128202;</div>
+          <h2>Metas</h2>
+          <p>Dashboard de meta e comissao, calendario de trabalho, clientes, marketing e conferencia de secao.</p>
+        </a>
+
+        <a class="cartao-modulo" href="pdv-painel.html">
+          <div class="icone">&#128722;</div>
+          <h2>Vendas</h2>
+          <p>Cadastro de cliente e pedido, fila de pedidos do dia por status e painel com graficos de vendas.</p>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+
+    if (sessao) {
+      document.getElementById("nomeUsuario").textContent = sessao.login;
+    }
+
+    document.getElementById("btnSairTopo").addEventListener("click", () => {
+      AuthDB.sair();
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
