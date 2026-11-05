@@ -115,7 +115,8 @@
     const listaAtual = Array.isArray(lista) ? lista : [];
     const existenteIndex = listaAtual.findIndex((item) => item.cpf === cpf);
 
-    const cliente = {
+    // Preserva campos extras (endereco, favorito, foto...) gravados pela area de Clientes.
+    const cliente = Object.assign({}, existenteIndex >= 0 ? listaAtual[existenteIndex] : {}, {
       id: existenteIndex >= 0 ? listaAtual[existenteIndex].id : gerarId(),
       nome,
       cpf,
@@ -124,7 +125,7 @@
       instagram: String((dados && dados.instagram) || "").trim(),
       criadoEm: existenteIndex >= 0 ? listaAtual[existenteIndex].criadoEm : new Date().toISOString(),
       atualizadoEm: new Date().toISOString()
-    };
+    });
 
     if (existenteIndex >= 0) {
       listaAtual[existenteIndex] = cliente;

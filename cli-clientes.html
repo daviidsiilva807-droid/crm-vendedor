@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Clientes</title>
+  <style>
+    [hidden] { display: none !important; }
+    .cli-abas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+    .cli-aba {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      min-height: 72px; padding: 12px 8px; border-radius: var(--raio);
+      border: 1px solid var(--borda-forte); background: #fff; color: var(--texto-medio);
+      font: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .cli-aba .ico { font-size: 22px; line-height: 1; }
+    .cli-aba:hover { transform: translateY(-2px); box-shadow: var(--sombra); }
+    .cli-aba.ativo { background: var(--laranja); border-color: var(--laranja); color: #fff; box-shadow: var(--sombra-forte); }
+    .cli-aba:focus-visible, .cli-btn-icone:focus-visible { outline: 3px solid var(--laranja-borda); outline-offset: 2px; }
+
+    .cli-cadastro { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+    @media (max-width: 900px) { .cli-cadastro { grid-template-columns: 1fr; } }
+    .cli-grupo-btn { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .cli-secao { margin: 20px 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-fraco); }
+    .cli-secao:first-child { margin-top: 0; }
+    .cli-largo { grid-column: 1 / -1; }
+    .cli-ajuda { font-size: 12px; color: var(--texto-fraco); line-height: 1.4; }
+    .cli-foto-linha { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .cli-banner-edicao { margin-bottom: 14px; }
+
+    /* Avatar */
+    .cli-avatar {
+      flex: none; width: 56px; height: 56px; border-radius: 50%; overflow: hidden;
+      display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 20px;
+      background: var(--laranja); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--borda);
+    }
+    .cli-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cli-avatar.grande { width: 84px; height: 84px; font-size: 30px; }
+    .cli-avatar.pequeno { width: 40px; height: 40px; font-size: 15px; }
+
+    /* Botoes de contato */
+    .cli-contatos { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cli-link {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 6px 12px;
+      border-radius: 8px; font-size: 12.5px; font-weight: 700; text-decoration: none;
+      border: 1px solid transparent; cursor: pointer; font-family: inherit;
+    }
+    .cli-link.whats { background: #e8f9ee; color: #15803d; border-color: #b7ebc9; }
+    .cli-link.insta { background: #fdf0f7; color: #be185d; border-color: #f9c9e0; }
+    .cli-link.neutro { background: #fff; color: var(--texto-medio); border-color: var(--borda-forte); }
+    .cli-link.off { opacity: .45; pointer-events: none; }
+    .cli-link:hover { filter: brightness(.96); }
+    .cli-btn-icone {
+      width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--borda-forte);
+      background: #fff; font-size: 17px; line-height: 1; cursor: pointer; flex: none;
+    }
+    .cli-btn-icone.fav { color: #d97706; border-color: #fcd34d; background: #fffbeb; }
+
+    /* Lista */
+    .cli-barra { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .cli-barra input[type="search"] { flex: 1 1 220px; min-width: 0; }
+    .cli-barra select { flex: 0 1 190px; min-width: 0; }
+    .cli-barra input[type="search"], .cli-barra select, .cli-mes {
+      min-height: 42px; padding: 8px 12px; border: 1px solid var(--borda-forte);
+      border-radius: var(--raio-sm); background: #fff; font: inherit; color: var(--texto);
+    }
+    .cli-modo { display: inline-flex; border: 1px solid var(--borda-forte); border-radius: var(--raio-sm); overflow: hidden; flex: none; }
+    .cli-modo button { min-height: 42px; width: 46px; border: 0; background: #fff; cursor: pointer; font-size: 18px; color: var(--texto-medio); }
+    .cli-modo button.ativo { background: var(--laranja); color: #fff; }
+    .cli-resumo { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+    .cli-itens.icones { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .cli-itens.lista { display: flex; flex-direction: column; gap: 10px; }
+    .cli-item {
+      background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio);
+      box-shadow: var(--sombra); padding: 14px; display: flex; gap: 12px;
+    }
+    .cli-itens.icones .cli-item { flex-direction: column; align-items: center; text-align: center; }
+    .cli-itens.lista .cli-item { align-items: center; flex-wrap: wrap; }
+    .cli-corpo { min-width: 0; flex: 1 1 200px; }
+    .cli-nome { font-weight: 800; font-size: 15px; overflow-wrap: anywhere; }
+    .cli-sub { font-size: 12.5px; color: var(--texto-medio); margin-top: 2px; overflow-wrap: anywhere; }
+    .cli-stats { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .cli-itens.icones .cli-stats, .cli-itens.icones .cli-contatos { justify-content: center; }
+    .cli-acoes-item { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .cli-itens.icones .cli-acoes-item { justify-content: center; }
+
+    /* Favoritos */
+    .cli-rank { display: flex; flex-direction: column; gap: 10px; }
+    .cli-rank-linha {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio);
+      box-shadow: var(--sombra); padding: 12px 14px;
+    }
+    .cli-posicao { flex: none; width: 38px; text-align: center; font-size: 22px; font-weight: 800; color: var(--texto-fraco); }
+    .cli-rank-linha.top1 { border-color: #fcd34d; background: #fffdf5; }
+    .cli-barra-valor { height: 8px; border-radius: 99px; background: #eef0f4; margin-top: 8px; overflow: hidden; }
+    .cli-barra-valor > span { display: block; height: 100%; background: linear-gradient(90deg, var(--laranja), #fb923c); border-radius: 99px; }
+    .cli-valor { text-align: right; flex: none; }
+    .cli-valor strong { display: block; font-size: 16px; }
+    .cli-valor small { color: var(--texto-fraco); font-size: 12px; }
+    @media (max-width: 560px) {
+      .cli-abas { gap: 6px; }
+      .cli-aba { font-size: 12.5px; min-height: 64px; }
+      .cli-valor { text-align: left; flex-basis: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Área de clientes</h1>
+    <p>Cadastre sua carteira, encontre qualquer cliente rápido e veja quem mais compra com você.</p>
+  </div>
+
+  <div class="cli-abas" role="tablist" aria-label="Seções da área de clientes">
+    <button class="cli-aba ativo" type="button" role="tab" aria-selected="true" data-aba="cadastro"><span class="ico">&#10133;</span>Cadastro</button>
+    <button class="cli-aba" type="button" role="tab" aria-selected="false" data-aba="lista"><span class="ico">&#128203;</span>Lista de clientes</button>
+    <button class="cli-aba" type="button" role="tab" aria-selected="false" data-aba="favoritos"><span class="ico">&#11088;</span>Favoritos</button>
+  </div>
+
+  <!-- ============================ CADASTRO ============================ -->
+  <section id="aba-cadastro" class="painel-tab ativo" role="tabpanel">
+    <div id="bannerEdicao" class="aviso cli-banner-edicao" hidden></div>
+    <form id="formCliente" class="cli-cadastro" novalidate autocomplete="off">
+      <div class="painel">
+        <div class="cli-secao">Nome</div>
+        <div class="cli-grupo-btn" role="group" aria-label="Forma de informar o nome">
+          <button class="tab-btn ativo" type="button" data-modo-nome="separado">Nome e sobrenome</button>
+          <button class="tab-btn" type="button" data-modo-nome="completo">Nome completo</button>
+        </div>
+        <div class="form-grid">
+          <div class="campo">
+            <label for="nome" id="rotuloNome">Nome *</label>
+            <input id="nome" type="text" maxlength="80" placeholder="Ex.: Maria">
+          </div>
+          <div class="campo" id="campoSobrenome">
+            <label for="sobrenome">Sobrenome *</label>
+            <input id="sobrenome" type="text" maxlength="80" placeholder="Ex.: Souza">
+          </div>
+        </div>
+
+        <div class="cli-secao">Contato e documento</div>
+        <div class="form-grid">
+          <div class="campo">
+            <label for="telefone">Número de contato *</label>
+            <input id="telefone" type="tel" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000">
+          </div>
+          <div class="campo">
+            <label for="whatsapp">WhatsApp</label>
+            <input id="whatsapp" type="tel" inputmode="tel" maxlength="15" placeholder="Se for diferente do contato">
+            <span class="cli-ajuda">Em branco = usa o número de contato.</span>
+          </div>
+          <div class="campo">
+            <label for="cpf">CPF *</label>
+            <input id="cpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
+          </div>
+          <div class="campo">
+            <label for="email">E-mail</label>
+            <input id="email" type="email" maxlength="120" placeholder="email@exemplo.com">
+          </div>
+          <div class="campo cli-largo">
+            <label for="endereco">Endereço</label>
+            <input id="endereco" type="text" maxlength="200" placeholder="Rua, número, bairro, cidade">
+          </div>
+        </div>
+
+        <div class="cli-secao">Redes e foto</div>
+        <div class="form-grid">
+          <div class="campo cli-largo">
+            <label for="instagram">Instagram</label>
+            <input id="instagram" type="text" maxlength="300" placeholder="Cole o link do perfil ou digite @usuario">
+            <span class="cli-ajuda">Ao colar o link, só o usuário é guardado. O botão abre o perfil do cliente.</span>
+          </div>
+          <div class="campo cli-largo">
+            <label for="arquivoFoto">Foto do cliente</label>
+            <div class="cli-foto-linha">
+              <input id="arquivoFoto" type="file" accept="image/*">
+              <button class="btn btn-neutro btn-mini" type="button" id="btnRemoverFoto" hidden>Remover foto</button>
+            </div>
+            <span class="cli-ajuda">O Instagram não permite buscar a foto do perfil automaticamente. Salve a foto do perfil e envie aqui; sem foto, aparecem as iniciais.</span>
+          </div>
+        </div>
+
+        <div class="acoes" style="margin-top:20px">
+          <button class="btn btn-primario" type="submit" id="btnSalvar">Salvar cliente</button>
+          <button class="btn btn-neutro" type="button" id="btnLimpar">Limpar</button>
+          <button class="btn btn-perigo" type="button" id="btnExcluir" hidden>Excluir cliente</button>
+        </div>
+        <div id="statusForm" class="status" role="status"></div>
+      </div>
+
+      <aside class="painel" aria-label="Pré-visualização">
+        <div class="cli-secao">Pré-visualização</div>
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px">
+          <div id="prevAvatar" class="cli-avatar grande"></div>
+          <div>
+            <div id="prevNome" class="cli-nome">Novo cliente</div>
+            <div id="prevContato" class="cli-sub">-</div>
+          </div>
+          <div class="cli-contatos" style="justify-content:center">
+            <a id="prevWhats" class="cli-link whats off" target="_blank" rel="noopener noreferrer">&#128172; WhatsApp</a>
+            <a id="prevInsta" class="cli-link insta off" target="_blank" rel="noopener noreferrer">&#128247; Instagram</a>
+          </div>
+        </div>
+      </aside>
+    </form>
+  </section>
+
+  <!-- ============================== LISTA ============================== -->
+  <section id="aba-lista" class="painel-tab" role="tabpanel">
+    <div class="cli-barra">
+      <input id="busca" type="search" placeholder="Buscar por nome, CPF, telefone, e-mail ou Instagram" aria-label="Buscar clientes">
+      <select id="filtro" aria-label="Filtrar">
+        <option value="todos">Todos os clientes</option>
+        <option value="favoritos">Só favoritos</option>
+        <option value="online">Compram online</option>
+        <option value="inativos">Sem comprar há 60+ dias</option>
+        <option value="semcompra">Nunca compraram</option>
+        <option value="semfoto">Sem foto</option>
+      </select>
+      <select id="ordem" aria-label="Ordenar">
+        <option value="nome">Nome (A-Z)</option>
+        <option value="nomeDesc">Nome (Z-A)</option>
+        <option value="gasto">Maior valor comprado</option>
+        <option value="pedidos">Mais pedidos</option>
+        <option value="recente">Compra mais recente</option>
+        <option value="novos">Cadastrados recentemente</option>
+      </select>
+      <div class="cli-modo" role="group" aria-label="Modo de exibição">
+        <button type="button" data-modo="lista" title="Lista" aria-label="Exibir em lista">&#9776;</button>
+        <button type="button" data-modo="icones" title="Ícones lado a lado" aria-label="Exibir em ícones">&#9638;</button>
+      </div>
+    </div>
+    <div id="resumoLista" class="cli-resumo"></div>
+    <div id="itensLista" class="cli-itens icones"></div>
+  </section>
+
+  <!-- ============================ FAVORITOS ============================ -->
+  <section id="aba-favoritos" class="painel-tab" role="tabpanel">
+    <div class="tabs" role="group" aria-label="Visões dos favoritos">
+      <button class="tab-btn ativo" type="button" data-fav="online">&#128722; Compram muito online</button>
+      <button class="tab-btn" type="button" data-fav="ranking">&#127942; Ranking do mês</button>
+      <button class="tab-btn" type="button" data-fav="estrelas">&#11088; Meus favoritos</button>
+    </div>
+    <div id="barraPeriodo" class="cli-barra">
+      <label for="mesRanking" style="font-weight:700;font-size:13px;color:var(--texto-medio)">Mês</label>
+      <input id="mesRanking" class="cli-mes" type="month">
+      <label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;font-weight:600;color:var(--texto-medio)">
+        <input id="todoPeriodo" type="checkbox"> Todo o período
+      </label>
+    </div>
+    <div id="resumoFav" class="cli-resumo"></div>
+    <div id="itensFav" class="cli-rank"></div>
+  </section>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="pdv-data.js"></script>
+  <script src="cli-data.js"></script>
+  <script src="cli-shell.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+
+    const CHAVE_MODO = "cli_modo_exibicao_v1";
+    const CORES = ["#f97316", "#2563eb", "#16a34a", "#9333ea", "#db2777", "#0891b2", "#ca8a04", "#dc2626"];
+
+    const estado = {
+      aba: "cadastro",
+      modoNome: "separado",
+      foto: "",
+      editandoId: null,
+      excluirArmado: false,
+      modoExibicao: "icones",
+      fav: "online"
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    /* ----------------------------- Utilitarios ----------------------------- */
+
+    function esc(valor) {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function iniciais(nome) {
+      const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
+      if (!partes.length) return "?";
+      const a = partes[0][0];
+      const b = partes.length > 1 ? partes[partes.length - 1][0] : "";
+      return (a + b).toUpperCase();
+    }
+
+    function corDe(texto) {
+      let h = 0;
+      for (const c of String(texto)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      return CORES[h % CORES.length];
+    }
+
+    function avatarHTML(cliente, tamanho) {
+      const foto = CLI.fotoSegura(cliente.foto);
+      const classe = `cli-avatar ${tamanho || ""}`.trim();
+      if (foto) {
+        return `<div class="${classe}"><img src="${foto}" alt=""></div>`;
+      }
+      return `<div class="${classe}" style="background:${corDe(cliente.nome)}" aria-hidden="true">${esc(iniciais(cliente.nome))}</div>`;
+    }
+
+    function linkWhats(cliente) {
+      const url = CLI.urlWhatsapp(cliente.whatsapp || cliente.telefone);
+      return url
+        ? `<a class="cli-link whats" href="${esc(url)}" target="_blank" rel="noopener noreferrer">&#128172; WhatsApp</a>`
+        : "";
+    }
+
+    function linkInsta(cliente) {
+      const url = CLI.urlInstagram(cliente.instagram);
+      return url
+        ? `<a class="cli-link insta" href="${esc(url)}" target="_blank" rel="noopener noreferrer">&#128247; Instagram</a>`
+        : "";
+    }
+
+    function botaoFav(cliente) {
+      return `<button class="cli-btn-icone ${cliente.favorito ? "fav" : ""}" type="button" data-acao="favoritar" data-id="${esc(cliente.id)}" aria-pressed="${cliente.favorito}" title="${cliente.favorito ? "Remover dos favoritos" : "Favoritar"}">${cliente.favorito ? "&#9733;" : "&#9734;"}</button>`;
+    }
+
+    function vazio(texto) {
+      return `<div class="painel vazio">${esc(texto)}</div>`;
+    }
+
+    /* -------------------------------- Abas --------------------------------- */
+
+    function mostrarAba(nome) {
+      estado.aba = nome;
+      document.querySelectorAll(".cli-aba").forEach((botao) => {
+        const ativo = botao.dataset.aba === nome;
+        botao.classList.toggle("ativo", ativo);
+        botao.setAttribute("aria-selected", String(ativo));
+      });
+      ["cadastro", "lista", "favoritos"].forEach((aba) => {
+        $(`aba-${aba}`).classList.toggle("ativo", aba === nome);
+      });
+      if (nome === "lista") renderLista();
+      if (nome === "favoritos") renderFavoritos();
+    }
+
+    /* ------------------------------- Cadastro ------------------------------ */
+
+    function definirModoNome(modo) {
+      estado.modoNome = modo;
+      document.querySelectorAll("[data-modo-nome]").forEach((b) => {
+        b.classList.toggle("ativo", b.dataset.modoNome === modo);
+      });
+      const completo = modo === "completo";
+      $("campoSobrenome").hidden = completo;
+      $("rotuloNome").textContent = completo ? "Nome completo *" : "Nome *";
+      $("nome").placeholder = completo ? "Ex.: Maria de Souza Lima" : "Ex.: Maria";
+      atualizarPrevia();
+    }
+
+    function lerFormulario() {
+      return {
+        modoNome: estado.modoNome,
+        nome: $("nome").value,
+        sobrenome: $("sobrenome").value,
+        telefone: $("telefone").value,
+        whatsapp: $("whatsapp").value,
+        cpf: $("cpf").value,
+        email: $("email").value,
+        endereco: $("endereco").value,
+        instagram: $("instagram").value,
+        foto: estado.foto
+      };
+    }
+
+    function atualizarPrevia() {
+      const d = lerFormulario();
+      const nome = [d.nome.trim(), estado.modoNome === "separado" ? d.sobrenome.trim() : ""].filter(Boolean).join(" ");
+      $("prevNome").textContent = nome || "Novo cliente";
+      $("prevAvatar").outerHTML = avatarHTML({ nome: nome || "?", foto: estado.foto }, "grande").replace("<div", '<div id="prevAvatar"');
+      $("prevContato").textContent = d.telefone || "-";
+
+      const whats = CLI.urlWhatsapp(d.whatsapp || d.telefone);
+      const insta = CLI.urlInstagram(d.instagram);
+      configurarLink($("prevWhats"), whats);
+      configurarLink($("prevInsta"), insta);
+      $("btnRemoverFoto").hidden = !estado.foto;
+    }
+
+    function configurarLink(elemento, url) {
+      if (url) {
+        elemento.href = url;
+        elemento.classList.remove("off");
+      } else {
+        elemento.removeAttribute("href");
+        elemento.classList.add("off");
+      }
+    }
+
+    function mostrarStatus(texto, tipo) {
+      const alvo = $("statusForm");
+      alvo.textContent = texto;
+      alvo.className = `status ${tipo || ""}`.trim();
+    }
+
+    function limparFormulario() {
+      $("formCliente").reset();
+      estado.foto = "";
+      estado.editandoId = null;
+      estado.excluirArmado = false;
+      $("bannerEdicao").hidden = true;
+      $("btnExcluir").hidden = true;
+      $("btnExcluir").textContent = "Excluir cliente";
+      $("btnSalvar").textContent = "Salvar cliente";
+      mostrarStatus("", "");
+      definirModoNome("separado");
+    }
+
+    function editarCliente(id) {
+      const cliente = CLI.buscar(id);
+      if (!cliente) return;
+      limparFormulario();
+      estado.editandoId = cliente.id;
+      estado.foto = CLI.fotoSegura(cliente.foto);
+
+      const completo = cliente.modoNome === "completo" || (!cliente.sobrenome && !cliente.primeiroNome);
+      definirModoNome(completo ? "completo" : "separado");
+      $("nome").value = completo ? cliente.nome : (cliente.primeiroNome || cliente.nome);
+      $("sobrenome").value = completo ? "" : (cliente.sobrenome || "");
+      $("telefone").value = PDV.mascararTelefone(cliente.telefone);
+      $("whatsapp").value = cliente.whatsapp ? PDV.mascararTelefone(cliente.whatsapp) : "";
+      $("cpf").value = PDV.mascararCPF(cliente.cpf);
+      $("email").value = cliente.email || "";
+      $("endereco").value = cliente.endereco || "";
+      $("instagram").value = cliente.instagram ? `@${cliente.instagram}` : "";
+
+      const banner = $("bannerEdicao");
+      banner.textContent = `Editando: ${cliente.nome}`;
+      banner.hidden = false;
+      $("btnExcluir").hidden = false;
+      $("btnSalvar").textContent = "Salvar alterações";
+      atualizarPrevia();
+      mostrarAba("cadastro");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function enviarFormulario(evento) {
+      evento.preventDefault();
+      const resultado = CLI.salvar(lerFormulario(), estado.editandoId);
+      if (!resultado.ok) {
+        mostrarStatus(resultado.mensagem, "error");
+        return;
+      }
+      const nome = resultado.cliente.nome;
+      limparFormulario();
+      mostrarStatus(resultado.novo ? `${nome} cadastrado com sucesso.` : `${nome} atualizado.`, "ok");
+    }
+
+    function excluirCliente() {
+      if (!estado.editandoId) return;
+      if (!estado.excluirArmado) {
+        estado.excluirArmado = true;
+        $("btnExcluir").textContent = "Confirmar exclusão";
+        mostrarStatus("Os pedidos já registrados deste cliente continuam no histórico. Clique de novo para excluir.", "error");
+        return;
+      }
+      const cliente = CLI.buscar(estado.editandoId);
+      CLI.remover(estado.editandoId);
+      limparFormulario();
+      mostrarStatus(`${cliente ? cliente.nome : "Cliente"} excluído.`, "ok");
+    }
+
+    function configurarCadastro() {
+      $("formCliente").addEventListener("submit", enviarFormulario);
+      $("btnLimpar").addEventListener("click", limparFormulario);
+      $("btnExcluir").addEventListener("click", excluirCliente);
+
+      document.querySelectorAll("[data-modo-nome]").forEach((b) => {
+        b.addEventListener("click", () => definirModoNome(b.dataset.modoNome));
+      });
+
+      $("cpf").addEventListener("input", () => { $("cpf").value = PDV.mascararCPF($("cpf").value); });
+      ["telefone", "whatsapp"].forEach((id) => {
+        $(id).addEventListener("input", () => { $(id).value = PDV.mascararTelefone($(id).value); atualizarPrevia(); });
+      });
+      ["nome", "sobrenome", "instagram"].forEach((id) => $(id).addEventListener("input", atualizarPrevia));
+
+      $("arquivoFoto").addEventListener("change", async () => {
+        const arquivo = $("arquivoFoto").files[0];
+        if (!arquivo) return;
+        try {
+          estado.foto = await CLI.fotoDeArquivo(arquivo);
+          mostrarStatus("", "");
+        } catch (erro) {
+          mostrarStatus(erro.message, "error");
+        }
+        $("arquivoFoto").value = "";
+        atualizarPrevia();
+      });
+
+      $("btnRemoverFoto").addEventListener("click", () => { estado.foto = ""; atualizarPrevia(); });
+    }
+
+    /* --------------------------------- Lista -------------------------------- */
+
+    function aplicarFiltro(lista, filtro) {
+      switch (filtro) {
+        case "favoritos": return lista.filter((c) => c.favorito);
+        case "online": return lista.filter((c) => c.stats.pedidosOnline > 0);
+        case "inativos":
+          return lista.filter((c) => {
+            const dias = CLI.diasDesde(c.stats.ultimaCompra);
+            return dias !== null && dias >= 60;
+          });
+        case "semcompra": return lista.filter((c) => c.stats.pedidos === 0);
+        case "semfoto": return lista.filter((c) => !CLI.fotoSegura(c.foto));
+        default: return lista;
+      }
+    }
+
+    function ordenar(lista, ordem) {
+      const porNome = (a, b) => a.nome.localeCompare(b.nome, "pt-BR");
+      const copia = lista.slice();
+      switch (ordem) {
+        case "nomeDesc": return copia.sort((a, b) => porNome(b, a));
+        case "gasto": return copia.sort((a, b) => b.stats.valor - a.stats.valor || porNome(a, b));
+        case "pedidos": return copia.sort((a, b) => b.stats.pedidos - a.stats.pedidos || porNome(a, b));
+        case "recente": return copia.sort((a, b) => b.stats.ultimaCompra.localeCompare(a.stats.ultimaCompra) || porNome(a, b));
+        case "novos": return copia.sort((a, b) => String(b.criadoEm || "").localeCompare(String(a.criadoEm || "")));
+        default: return copia.sort(porNome);
+      }
+    }
+
+    function normalizar(texto) {
+      return String(texto || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    }
+
+    function buscaConfere(cliente, termo) {
+      if (!termo) return true;
+      const digitos = termo.replace(/\D/g, "");
+      const texto = normalizar([cliente.nome, cliente.email, cliente.instagram, cliente.endereco].join(" "));
+      if (texto.includes(normalizar(termo))) return true;
+      return digitos.length >= 3 && (cliente.cpf.includes(digitos) || String(cliente.telefone).includes(digitos));
+    }
+
+    function statsHTML(cliente) {
+      const s = cliente.stats;
+      const partes = [];
+      if (s.pedidos > 0) {
+        partes.push(`<span class="pill laranja">${esc(CRM.moeda(s.valor))}</span>`);
+        partes.push(`<span class="pill">${s.pedidos} pedido${s.pedidos > 1 ? "s" : ""}</span>`);
+        if (s.pedidosOnline > 0) partes.push(`<span class="pill ok">${s.pedidosOnline} online</span>`);
+        const dias = CLI.diasDesde(s.ultimaCompra);
+        if (dias !== null) {
+          partes.push(`<span class="pill ${dias >= 60 ? "wait" : ""}">${dias === 0 ? "comprou hoje" : `última compra há ${dias}d`}</span>`);
+        }
+      } else {
+        partes.push('<span class="pill">Sem compras</span>');
+      }
+      return partes.join("");
+    }
+
+    function itemListaHTML(cliente) {
+      const contato = [PDV.mascararTelefone(cliente.telefone), cliente.email].filter(Boolean).join(" · ");
+      return `
+        <article class="cli-item">
+          ${avatarHTML(cliente, "grande")}
+          <div class="cli-corpo">
+            <div class="cli-nome">${esc(cliente.nome)}</div>
+            <div class="cli-sub">${esc(contato)}</div>
+            ${cliente.endereco ? `<div class="cli-sub">${esc(cliente.endereco)}</div>` : ""}
+            <div class="cli-stats">${statsHTML(cliente)}</div>
+          </div>
+          <div class="cli-acoes-item">
+            <div class="cli-contatos">${linkWhats(cliente)}${linkInsta(cliente)}</div>
+            ${botaoFav(cliente)}
+            <button class="cli-btn-icone" type="button" data-acao="editar" data-id="${esc(cliente.id)}" title="Editar" aria-label="Editar ${esc(cliente.nome)}">&#9998;</button>
+          </div>
+        </article>`;
+    }
+
+    function renderLista() {
+      const todos = CLI.listar();
+      const termo = $("busca").value.trim();
+      let lista = todos.filter((c) => buscaConfere(c, termo));
+      lista = ordenar(aplicarFiltro(lista, $("filtro").value), $("ordem").value);
+
+      const favoritos = todos.filter((c) => c.favorito).length;
+      const comCompra = todos.filter((c) => c.stats.pedidos > 0).length;
+      $("resumoLista").innerHTML = `
+        <span class="pill laranja">${todos.length} cliente${todos.length === 1 ? "" : "s"}</span>
+        <span class="pill">${favoritos} favorito${favoritos === 1 ? "" : "s"}</span>
+        <span class="pill">${comCompra} com compras</span>
+        ${lista.length !== todos.length ? `<span class="pill wait">Mostrando ${lista.length}</span>` : ""}`;
+
+      const alvo = $("itensLista");
+      alvo.className = `cli-itens ${estado.modoExibicao}`;
+      document.querySelectorAll("[data-modo]").forEach((b) => b.classList.toggle("ativo", b.dataset.modo === estado.modoExibicao));
+
+      if (!todos.length) {
+        alvo.innerHTML = vazio("Nenhum cliente cadastrado ainda. Use a aba Cadastro para adicionar o primeiro.");
+        return;
+      }
+      alvo.innerHTML = lista.length ? lista.map(itemListaHTML).join("") : vazio("Nenhum cliente encontrado com esses filtros.");
+    }
+
+    function configurarLista() {
+      try {
+        const salvo = localStorage.getItem(CHAVE_MODO);
+        if (salvo === "lista" || salvo === "icones") estado.modoExibicao = salvo;
+      } catch (erro) { /* sem storage: usa o padrao */ }
+
+      ["busca", "filtro", "ordem"].forEach((id) => $(id).addEventListener("input", renderLista));
+      document.querySelectorAll("[data-modo]").forEach((b) => {
+        b.addEventListener("click", () => {
+          estado.modoExibicao = b.dataset.modo;
+          try { localStorage.setItem(CHAVE_MODO, estado.modoExibicao); } catch (erro) { /* ignora */ }
+          renderLista();
+        });
+      });
+    }
+
+    /* ------------------------------- Favoritos ------------------------------ */
+
+    function competenciaSelecionada() {
+      return $("todoPeriodo").checked ? "" : ($("mesRanking").value || CLI.competenciaAtual());
+    }
+
+    function nomeMes(competencia) {
+      if (!competencia) return "todo o período";
+      const [ano, mes] = competencia.split("-").map(Number);
+      return new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    }
+
+    function linhaRankHTML(cliente, indice, opcoes) {
+      const medalha = ["&#129351;", "&#129352;", "&#129353;"][indice] || `${indice + 1}º`;
+      const largura = opcoes.maximo > 0 ? Math.max(4, Math.round((opcoes.medida / opcoes.maximo) * 100)) : 0;
+      return `
+        <article class="cli-rank-linha ${indice === 0 ? "top1" : ""}">
+          <div class="cli-posicao">${medalha}</div>
+          ${avatarHTML(cliente, "pequeno")}
+          <div class="cli-corpo">
+            <div class="cli-nome">${esc(cliente.nome)}</div>
+            <div class="cli-sub">${opcoes.detalhe}</div>
+            <div class="cli-barra-valor"><span style="width:${largura}%"></span></div>
+          </div>
+          <div class="cli-valor"><strong>${esc(opcoes.destaque)}</strong><small>${esc(opcoes.apoio)}</small></div>
+          <div class="cli-acoes-item">${linkWhats(cliente)}${botaoFav(cliente)}</div>
+        </article>`;
+    }
+
+    function renderFavoritos() {
+      document.querySelectorAll("[data-fav]").forEach((b) => b.classList.toggle("ativo", b.dataset.fav === estado.fav));
+      $("barraPeriodo").hidden = estado.fav === "estrelas";
+      const competencia = competenciaSelecionada();
+      const alvo = $("itensFav");
+      const resumo = $("resumoFav");
+
+      if (estado.fav === "estrelas") {
+        const lista = CLI.listar().filter((c) => c.favorito);
+        resumo.innerHTML = `<span class="pill laranja">${lista.length} favorito${lista.length === 1 ? "" : "s"}</span>`;
+        alvo.className = "cli-itens icones";
+        alvo.innerHTML = lista.length
+          ? lista.map(itemListaHTML).join("")
+          : vazio("Toque na estrela de um cliente (na lista ou nos rankings) para guardá-lo aqui.");
+        return;
+      }
+
+      alvo.className = "cli-rank";
+
+      if (estado.fav === "online") {
+        const lista = CLI.rankingOnline(competencia);
+        const maximo = lista.length ? lista[0].stats.pedidosOnline : 0;
+        const totalOnline = lista.reduce((soma, c) => soma + c.stats.valorOnline, 0);
+        resumo.innerHTML = `
+          <span class="pill laranja">${lista.length} cliente${lista.length === 1 ? "" : "s"} online em ${esc(nomeMes(competencia))}</span>
+          <span class="pill ok">${esc(CRM.moeda(totalOnline))} em vendas online</span>`;
+        alvo.innerHTML = lista.length
+          ? lista.map((c, i) => linhaRankHTML(c, i, {
+              maximo,
+              medida: c.stats.pedidosOnline,
+              destaque: `${c.stats.pedidosOnline} pedido${c.stats.pedidosOnline > 1 ? "s" : ""} online`,
+              apoio: CRM.moeda(c.stats.valorOnline),
+              detalhe: `${c.stats.pedidosOnline >= 3 ? '<span class="badge ok">Cliente online fiel</span> ' : ""}${c.stats.pedidos > c.stats.pedidosOnline ? `${c.stats.pedidos - c.stats.pedidosOnline} no presencial` : "Só compra online"}`
+            })).join("")
+          : vazio("Nenhuma venda online registrada neste período. Elas aparecem aqui quando o pedido é registrado como Online no módulo Vendas.");
+        return;
+      }
+
+      const lista = CLI.rankingValor(competencia);
+      const maximo = lista.length ? lista[0].stats.valor : 0;
+      const total = lista.reduce((soma, c) => soma + c.stats.valor, 0);
+      resumo.innerHTML = `
+        <span class="pill laranja">Ranking de ${esc(nomeMes(competencia))}</span>
+        <span class="pill">${esc(CRM.moeda(total))} no período</span>`;
+      alvo.innerHTML = lista.length
+        ? lista.map((c, i) => linhaRankHTML(c, i, {
+            maximo,
+            medida: c.stats.valor,
+            destaque: CRM.moeda(c.stats.valor),
+            apoio: `${c.stats.pedidos} pedido${c.stats.pedidos > 1 ? "s" : ""}`,
+            detalhe: `${total > 0 ? Math.round((c.stats.valor / total) * 100) : 0}% do faturamento do período`
+          })).join("")
+        : vazio("Nenhum pedido registrado neste período.");
+    }
+
+    function configurarFavoritos() {
+      $("mesRanking").value = CLI.competenciaAtual();
+      document.querySelectorAll("[data-fav]").forEach((b) => {
+        b.addEventListener("click", () => { estado.fav = b.dataset.fav; renderFavoritos(); });
+      });
+      $("mesRanking").addEventListener("input", renderFavoritos);
+      $("todoPeriodo").addEventListener("change", () => {
+        $("mesRanking").disabled = $("todoPeriodo").checked;
+        renderFavoritos();
+      });
+    }
+
+    /* -------------------------------- Inicio -------------------------------- */
+
+    function iniciar() {
+      document.querySelectorAll(".cli-aba").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.aba)));
+
+      document.addEventListener("click", (evento) => {
+        const botao = evento.target.closest("[data-acao]");
+        if (!botao) return;
+        if (botao.dataset.acao === "favoritar") {
+          CLI.alternarFavorito(botao.dataset.id);
+          if (estado.aba === "lista") renderLista();
+          if (estado.aba === "favoritos") renderFavoritos();
+        } else if (botao.dataset.acao === "editar") {
+          editarCliente(botao.dataset.id);
+        }
+      });
+
+      configurarCadastro();
+      configurarLista();
+      configurarFavoritos();
+      definirModoNome("separado");
+    }
+
+    if (sessao) {
+      iniciar();
+    }
+  </script>
+</body>
+</html>
