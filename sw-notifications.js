@@ -1,5 +1,5 @@
 // Service Worker para gerenciar notificações de reservas
-const CACHE_NAME = 'controle-secao-v7';
+const CACHE_NAME = 'controle-secao-v8';
 const urlsCache = [
   '/',
   '/index.html',
@@ -15,11 +15,14 @@ const urlsCache = [
   '/pdv-painel.html',
   '/pdv-novo-pedido.html',
   '/pdv-pedidos.html',
+  '/cli-clientes.html',
   '/app-shell.css',
   '/app-shell.js',
   '/app-data.js',
   '/pdv-data.js',
   '/pdv-shell.js',
+  '/cli-data.js',
+  '/cli-shell.js',
   '/secao-escala.js',
   '/style.css',
   '/transitions.js',
