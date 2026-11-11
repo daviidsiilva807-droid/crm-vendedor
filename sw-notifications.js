@@ -1,5 +1,5 @@
 // Service Worker para gerenciar notificações de reservas
-const CACHE_NAME = 'controle-secao-v12';
+const CACHE_NAME = 'controle-secao-v13';
 const urlsCache = [
   '/',
   '/index.html',
@@ -34,6 +34,7 @@ const urlsCache = [
   '/auth-db.js',
   '/notifications.js',
   '/lembretes.js',
+  '/atualizar-app.js',
   '/marketing-agent.js'
 ];
 
@@ -81,7 +82,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    fetch(event.request)
+    /* "no-cache": sempre pergunta ao servidor se o arquivo mudou (o GitHub Pages
+       deixa os arquivos em cache por ~10 min, e isso atrasava as atualizacoes). */
+    fetch(event.request, { cache: 'no-cache' })
       .then((response) => {
         if (response && response.status === 200 && response.type === 'basic') {
           const copia = response.clone();

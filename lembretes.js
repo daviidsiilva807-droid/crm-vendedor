@@ -299,7 +299,7 @@
 
   function iniciar() {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw-notifications.js").catch(function () {});
+      navigator.serviceWorker.register("sw-notifications.js", { updateViaCache: "none" }).catch(function () {});
     }
     verificar();
     setInterval(verificar, VERIFICAR_A_CADA_MS);

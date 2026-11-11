@@ -9,7 +9,7 @@ class NotificacaoReserva {
   inicializar() {
     // Registrar service worker se suportado
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw-notifications.js').catch(err => {
+      navigator.serviceWorker.register('sw-notifications.js', { updateViaCache: 'none' }).catch(err => {
         console.log('Service Worker não foi registrado:', err);
       });
     }
