@@ -14,10 +14,7 @@
     { href: "marketing.html", icone: "&#128226;", texto: "Mensagens prontas", titulo: "Mensagens prontas de marketing" },
     { href: "vendas.html", icone: "&#128176;", texto: "Vendas", titulo: "Vendas e metas" },
     { grupo: "Operacao" },
-    { href: "secao.html", icone: "&#128230;", texto: "Secao", titulo: "Secao" },
-    { href: "vestuario.html", icone: "&#128085;", texto: "Vestuario", titulo: "Secao - Vestuario", sub: true },
-    { href: "tenis.html", icone: "&#128095;", texto: "Tenis", titulo: "Secao - Tenis", sub: true },
-    { href: "acessorios.html", icone: "&#128717;", texto: "Acessorios", titulo: "Secao - Acessorios", sub: true },
+    { href: "sec-area.html", icone: "&#128230;", texto: "Minha secao", titulo: "Minha secao" },
     { href: "clientes.html", icone: "&#128101;", texto: "Clientes", titulo: "Clientes e reservas" },
     { grupo: "Gestao", somenteAdmin: true },
     { href: "admin.html", icone: "&#128274;", texto: "Painel do administrador", titulo: "Painel do administrador", somenteAdmin: true }

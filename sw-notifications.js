@@ -1,5 +1,5 @@
 // Service Worker para gerenciar notificações de reservas
-const CACHE_NAME = 'controle-secao-v8';
+const CACHE_NAME = 'controle-secao-v12';
 const urlsCache = [
   '/',
   '/index.html',
@@ -16,6 +16,7 @@ const urlsCache = [
   '/pdv-novo-pedido.html',
   '/pdv-pedidos.html',
   '/cli-clientes.html',
+  '/sec-area.html',
   '/app-shell.css',
   '/app-shell.js',
   '/app-data.js',
@@ -23,11 +24,16 @@ const urlsCache = [
   '/pdv-shell.js',
   '/cli-data.js',
   '/cli-shell.js',
+  '/sec-data.js',
+  '/sec-shell.js',
   '/secao-escala.js',
+  '/secao-mapa.js',
+  '/secao-compartilhada.html',
   '/style.css',
   '/transitions.js',
   '/auth-db.js',
   '/notifications.js',
+  '/lembretes.js',
   '/marketing-agent.js'
 ];
 
@@ -115,6 +121,26 @@ self.addEventListener('message', (event) => {
 // Gerenciar cliques em notificações
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  // Lembretes diarios (9h e 17h): abre a pagina indicada na notificacao
+  const dados = event.notification.data;
+  if (dados && dados.tipo === 'lembrete') {
+    const destino = new URL(String(dados.destino || 'dashboard.html'), self.registration.scope);
+    if (destino.origin !== self.location.origin) {
+      return;
+    }
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((lista) => {
+        for (const client of lista) {
+          if ('focus' in client && 'navigate' in client) {
+            return client.focus().then(() => client.navigate(destino.href));
+          }
+        }
+        return clients.openWindow ? clients.openWindow(destino.href) : undefined;
+      })
+    );
+    return;
+  }
 
   if (event.action === 'ver' || !event.action) {
     // Abrir a página de clientes

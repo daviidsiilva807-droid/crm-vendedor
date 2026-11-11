@@ -322,7 +322,12 @@
 
   function resumo(competencia) {
     const alvoMes = competencia || competenciaAtual();
-    const config = obterConfig();
+    /* A configuracao do mes: igual a geral, mas com as metas proprias daquele mes. */
+    const metasMes = metasDoMes(alvoMes);
+    const config = Object.assign({}, obterConfig(), {
+      metaEstabelecida: metasMes.estabelecida,
+      metaPessoal: metasMes.pessoal
+    });
     const lancamentos = listarLancamentosDoMes(alvoMes);
     const porDia = totalPorDia(alvoMes);
     const mesCorrente = alvoMes === competenciaAtual();
@@ -375,6 +380,7 @@
     return {
       competencia: alvoMes,
       config,
+      metasDoMes: metasMes,
       lancamentos,
       porDia,
       serie,
@@ -624,9 +630,74 @@
     return salva > 0 ? salva : obterConfig().metaEstabelecida;
   }
 
+  /* Meta pessoal de cada mes (mesma ideia da meta estabelecida). */
+  function obterMetasPessoaisMensais() {
+    const dados = lerJSON(chave("metasPessoaisMensais"), {});
+    return dados && typeof dados === "object" && !Array.isArray(dados) ? dados : {};
+  }
+
+  function metaPessoalDoMes(competencia) {
+    const salva = numero(obterMetasPessoaisMensais()[competencia]);
+    return salva > 0 ? salva : obterConfig().metaPessoal;
+  }
+
+  /* As duas metas de um mes. "propria" = valor definido para aquele mes;
+     sem ele o mes usa a meta padrao da configuracao. */
+  function metasDoMes(competencia) {
+    const estab = numero(obterMetasMensais()[competencia]);
+    const pessoal = numero(obterMetasPessoaisMensais()[competencia]);
+    const config = obterConfig();
+    return {
+      estabelecida: estab > 0 ? estab : config.metaEstabelecida,
+      pessoal: pessoal > 0 ? pessoal : config.metaPessoal,
+      propriaEstabelecida: estab > 0,
+      propriaPessoal: pessoal > 0
+    };
+  }
+
+  const LIMITE_META = 100000000;
+
+  /* Grava varios meses de uma vez: { "2026-08": { estabelecida: 90000, pessoal: 100000 }, ... }.
+     Valor 0, vazio ou ausente remove a meta propria daquele campo. Se algum mes for
+     invalido, nada e gravado. */
+  function salvarMetasMensais(mapa) {
+    if (!mapa || typeof mapa !== "object") {
+      return { ok: false, mensagem: "Nada para salvar." };
+    }
+    const estabelecidas = obterMetasMensais();
+    const pessoais = obterMetasPessoaisMensais();
+    const meses = Object.keys(mapa);
+
+    for (const competencia of meses) {
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(competencia)) {
+        return { ok: false, mensagem: "Mes invalido: " + competencia };
+      }
+      const valores = mapa[competencia] || {};
+      for (const campo of ["estabelecida", "pessoal"]) {
+        const valor = numero(valores[campo]);
+        if (valor < 0 || valor > LIMITE_META) {
+          return { ok: false, mensagem: "Valor de meta fora do limite em " + competencia + "." };
+        }
+      }
+    }
+
+    meses.forEach((competencia) => {
+      const valores = mapa[competencia] || {};
+      const estab = Math.max(0, numero(valores.estabelecida));
+      const pessoal = Math.max(0, numero(valores.pessoal));
+      if (estab > 0) estabelecidas[competencia] = estab; else delete estabelecidas[competencia];
+      if (pessoal > 0) pessoais[competencia] = pessoal; else delete pessoais[competencia];
+    });
+
+    gravarJSON(chave("metasMensais"), estabelecidas);
+    gravarJSON(chave("metasPessoaisMensais"), pessoais);
+    return { ok: true, mensagem: "Metas salvas." };
+  }
+
   function historicoMensal() {
     const manual = obterHistoricoManual();
     const metas = obterMetasMensais();
+    const metasPessoais = obterMetasPessoaisMensais();
     const porMes = {};
 
     listarLancamentos().forEach((item) => {
@@ -635,7 +706,7 @@
     });
 
     const meses = new Set(
-      Object.keys(porMes).concat(Object.keys(manual)).concat(Object.keys(metas))
+      Object.keys(porMes).concat(Object.keys(manual)).concat(Object.keys(metas)).concat(Object.keys(metasPessoais))
     );
     const config = obterConfig();
 
@@ -648,6 +719,8 @@
         const total = valorManual > 0 ? valorManual : lancado;
         const metaSalva = numero(metas[competencia]);
         const meta = metaSalva > 0 ? metaSalva : config.metaEstabelecida;
+        const metaPessoalSalva = numero(metasPessoais[competencia]);
+        const metaPessoal = metaPessoalSalva > 0 ? metaPessoalSalva : config.metaPessoal;
 
         /* A bonificacao daquele mes vale sobre a meta que existia no mes. */
         const comissao = calcularComissaoDetalhada(total, Object.assign({}, config, { metaEstabelecida: meta }));
@@ -659,6 +732,8 @@
           total,
           meta,
           metaPropria: metaSalva > 0,
+          metaPessoal,
+          metaPessoalPropria: metaPessoalSalva > 0,
           progresso: meta > 0 ? (total / meta) * 100 : 0,
           falta: Math.max(0, meta - total),
           sobra: Math.max(0, total - meta),
@@ -746,6 +821,10 @@
     obterMetasMensais,
     salvarMetaMensal,
     metaDoMes,
+    obterMetasPessoaisMensais,
+    metaPessoalDoMes,
+    metasDoMes,
+    salvarMetasMensais,
     historicoMensal,
     migrarDadosAntigos
   };

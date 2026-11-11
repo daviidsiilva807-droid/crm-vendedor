@@ -303,20 +303,54 @@
 
   <!-- =========================== CONFIG =============================== -->
   <section id="abaConfig" class="painel-tab">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titulo">
+        <h3>Meta de cada mes</h3>
+        <small>Cada mes pode ter a sua meta</small>
+      </div>
+
+      <div class="acoes" style="margin-bottom:12px;align-items:center">
+        <button class="btn btn-neutro btn-mini" type="button" id="btnAnoAnterior" aria-label="Ano anterior">&#8249;</button>
+        <strong id="rotuloAnoMetas" style="min-width:56px;text-align:center">2026</strong>
+        <button class="btn btn-neutro btn-mini" type="button" id="btnAnoSeguinte" aria-label="Proximo ano">&#8250;</button>
+      </div>
+
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>Meta estabelecida (R$)</th>
+              <th>Meta pessoal (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaMetasAno"></tbody>
+        </table>
+      </div>
+
+      <p class="dica" style="margin-top:10px">Deixe em branco para o mes usar a meta padrao (abaixo). A meta de cada mes vale para o painel, o resumo, a bonificacao e o historico daquele mes.</p>
+
+      <div class="acoes" style="margin-top:12px">
+        <button class="btn btn-primario" type="button" id="btnSalvarMetasAno">Salvar metas do ano</button>
+        <button class="btn btn-neutro" type="button" id="btnRepetirMetas">Repetir o primeiro valor nos meses em branco</button>
+      </div>
+      <div id="statusMetasAno" class="status" role="status"></div>
+    </div>
+
     <div class="card">
       <div class="card-titulo">
-        <h3>Configuracao de metas e comissao</h3>
-        <small>Valores usados em todo o sistema</small>
+        <h3>Meta padrao e comissao</h3>
+        <small>A meta padrao vale para os meses sem meta propria</small>
       </div>
 
       <div class="form-grid">
         <div class="campo">
-          <label for="cfgEstabelecida">Meta estabelecida (R$)</label>
+          <label for="cfgEstabelecida">Meta estabelecida padrao (R$)</label>
           <input id="cfgEstabelecida" type="text" inputmode="decimal">
           <span class="dica">Meta definida pela loja. Padrao: R$ 84.000,00</span>
         </div>
         <div class="campo">
-          <label for="cfgPessoal">Meta pessoal (R$)</label>
+          <label for="cfgPessoal">Meta pessoal padrao (R$)</label>
           <input id="cfgPessoal" type="text" inputmode="decimal">
           <span class="dica">Seu objetivo proprio. Padrao: R$ 96.000,00</span>
         </div>
@@ -350,8 +384,13 @@
   <script src="auth-db.js"></script>
   <script src="app-data.js"></script>
   <script src="app-shell.js"></script>
+  <script src="lembretes.js"></script>
   <script>
     const sessao = AuthDB.exigirLogin();
+
+    /* Estado das metas por mes: precisa existir antes de iniciar() ser chamado. */
+    let anoMetas = new Date().getFullYear();
+    const NOMES_MESES = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
     if (sessao) {
       CRM.migrarDadosAntigos();
@@ -364,6 +403,7 @@
       configurarAbas();
       configurarCamposMoeda();
       carregarConfiguracao();
+      configurarMetasAno();
       atualizarTudo();
     }
 
@@ -425,6 +465,107 @@
       status.textContent = "Configuracao salva. Os calculos foram atualizados.";
       status.className = "status ok";
       atualizarTudo();
+    }
+
+    /* --------------------------- Meta de cada mes ------------------------ */
+    function aplicarMascaraMeta(campo) {
+      campo.addEventListener("input", () => {
+        const valor = CRM.moedaParaNumero(campo.value);
+        campo.value = valor > 0 ? CRM.numeroBR(valor) : "";
+      });
+    }
+
+    function montarMetasAno() {
+      const corpo = document.getElementById("tabelaMetasAno");
+      const padrao = CRM.obterConfig();
+      const atual = CRM.competenciaAtual();
+      document.getElementById("rotuloAnoMetas").textContent = String(anoMetas);
+      corpo.textContent = "";
+
+      NOMES_MESES.forEach((nome, indice) => {
+        const competencia = `${anoMetas}-${String(indice + 1).padStart(2, "0")}`;
+        const metas = CRM.metasDoMes(competencia);
+        const tr = document.createElement("tr");
+
+        const tdMes = document.createElement("td");
+        const forte = document.createElement("strong");
+        forte.textContent = nome;
+        tdMes.appendChild(forte);
+        if (competencia === atual) {
+          const pill = document.createElement("span");
+          pill.className = "pill laranja";
+          pill.style.marginLeft = "8px";
+          pill.textContent = "mes atual";
+          tdMes.appendChild(pill);
+        }
+        tr.appendChild(tdMes);
+
+        [
+          { campo: "estabelecida", propria: metas.propriaEstabelecida, valor: metas.estabelecida, padrao: padrao.metaEstabelecida },
+          { campo: "pessoal", propria: metas.propriaPessoal, valor: metas.pessoal, padrao: padrao.metaPessoal }
+        ].forEach((item) => {
+          const td = document.createElement("td");
+          const input = document.createElement("input");
+          input.type = "text";
+          input.inputMode = "decimal";
+          input.dataset.mes = competencia;
+          input.dataset.campo = item.campo;
+          input.value = item.propria ? CRM.numeroBR(item.valor) : "";
+          input.placeholder = `padrao ${CRM.numeroBR(item.padrao)}`;
+          input.setAttribute("aria-label", `Meta ${item.campo === "estabelecida" ? "estabelecida" : "pessoal"} de ${nome} de ${anoMetas}`);
+          input.style.width = "100%";
+          input.style.minWidth = "130px";
+          aplicarMascaraMeta(input);
+          td.appendChild(input);
+          tr.appendChild(td);
+        });
+
+        corpo.appendChild(tr);
+      });
+    }
+
+    function salvarMetasAno() {
+      const mapa = {};
+      document.querySelectorAll("#tabelaMetasAno input[data-mes]").forEach((input) => {
+        const competencia = input.dataset.mes;
+        mapa[competencia] = mapa[competencia] || {};
+        mapa[competencia][input.dataset.campo] = CRM.moedaParaNumero(input.value);
+      });
+
+      const resultado = CRM.salvarMetasMensais(mapa);
+      const status = document.getElementById("statusMetasAno");
+      status.textContent = resultado.ok ? `Metas de ${anoMetas} salvas. Os calculos foram atualizados.` : resultado.mensagem;
+      status.className = resultado.ok ? "status ok" : "status error";
+      if (resultado.ok) {
+        atualizarTudo();
+        montarMetasAno();
+      }
+    }
+
+    function repetirPrimeiroValor() {
+      ["estabelecida", "pessoal"].forEach((campo) => {
+        const campos = Array.from(document.querySelectorAll(`#tabelaMetasAno input[data-campo="${campo}"]`));
+        const primeiro = campos.find((c) => CRM.moedaParaNumero(c.value) > 0);
+        if (!primeiro) {
+          return;
+        }
+        campos.forEach((c) => {
+          if (CRM.moedaParaNumero(c.value) === 0) {
+            c.value = primeiro.value;
+          }
+        });
+      });
+      const status = document.getElementById("statusMetasAno");
+      status.textContent = "Meses em branco preenchidos. Clique em Salvar metas do ano para confirmar.";
+      status.className = "status ok";
+    }
+
+    function configurarMetasAno() {
+      document.getElementById("btnAnoAnterior").addEventListener("click", () => { anoMetas -= 1; montarMetasAno(); });
+      document.getElementById("btnAnoSeguinte").addEventListener("click", () => { anoMetas += 1; montarMetasAno(); });
+      document.getElementById("btnSalvarMetasAno").addEventListener("click", salvarMetasAno);
+      document.getElementById("btnRepetirMetas").addEventListener("click", repetirPrimeiroValor);
+      montarMetasAno();
     }
 
     function restaurarPadrao() {

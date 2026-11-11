@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#f97316">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Seção da semana</title>
+  <style>
+    body { background: var(--fundo, #f6f7f9); }
+    .pub { max-width: 1000px; margin: 0 auto; padding: 16px; }
+    .pub-topo {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      border-radius: var(--raio); padding: 18px 20px; color: #fff; margin-bottom: 16px;
+      background: linear-gradient(120deg, var(--laranja) 0%, var(--laranja-escuro) 100%); box-shadow: var(--sombra-forte);
+    }
+    .pub-topo h1 { margin: 0; font-size: clamp(1.2rem, 4vw, 1.6rem); font-weight: 800; color: #fff; }
+    .pub-topo p { margin: 4px 0 0; font-size: 13.5px; opacity: .92; }
+    .nav-semana { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .nav-semana .btn { background: rgba(255,255,255,.16); color: #fff; border-color: rgba(255,255,255,.6); min-height: 38px; }
+    .nav-semana .periodo { font-weight: 800; min-width: 110px; text-align: center; }
+    .pub-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr); align-items: start; margin-bottom: 16px; }
+    @media (max-width: 800px) { .pub-grid { grid-template-columns: minmax(0, 1fr); } }
+    .coluna { display: flex; flex-direction: column; gap: 16px; }
+
+    #mapaLoja { display: block; width: 100%; height: auto; touch-action: manipulation; }
+    #mapaLoja .zona { cursor: pointer; transition: opacity .15s ease; }
+    #mapaLoja .zona:hover { opacity: .78; }
+    #mapaLoja .zona-rotulo { font-size: 13px; font-weight: 800; pointer-events: none; }
+    #mapaLoja .fixo-rotulo { font-size: 10.5px; font-weight: 700; fill: var(--texto-fraco); letter-spacing: .04em; pointer-events: none; }
+    #mapaLoja .zona.apagada { opacity: .22; }
+    @media (max-width: 620px) { #mapaLoja .zona-rotulo { font-size: 20px; } #mapaLoja .fixo-rotulo { font-size: 15px; } }
+
+    .lista-escala { display: flex; flex-direction: column; gap: 8px; }
+    .escala-item {
+      display: flex; align-items: center; gap: 11px; padding: 9px 11px; border-radius: var(--raio-sm);
+      border: 1px solid var(--borda); background: #fff; cursor: pointer; text-align: left; font: inherit; width: 100%;
+    }
+    .escala-item:hover { background: #fbfbfc; }
+    .escala-item.selecionado { border-color: var(--texto); background: #f8fafc; }
+    .escala-num {
+      width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px; display: grid; place-items: center;
+      font-size: 13px; font-weight: 800; color: #fff;
+    }
+    .escala-nome { font-size: 14px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .detalhe-vazio { color: var(--texto-fraco); font-size: 13.5px; line-height: 1.55; }
+    .detalhe-topo { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .detalhe-num { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-weight: 800; font-size: 18px; color: #fff; }
+    .detalhe-nome { font-size: 16px; font-weight: 800; overflow-wrap: anywhere; }
+    .detalhe-papel { font-size: 12.5px; color: var(--texto-medio); }
+    .detalhe-linha { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--borda); font-size: 13.5px; }
+    .detalhe-linha:last-of-type { border-bottom: none; }
+    .detalhe-linha span { color: var(--texto-medio); }
+    .detalhe-linha b { font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+    .pessoa-select { width: 100%; min-height: 42px; padding: 8px 12px; border: 1px solid var(--borda-forte); border-radius: var(--raio-sm); background: #fff; font: inherit; margin-bottom: 10px; }
+    .rodizio-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--borda); font-size: 13.5px; }
+    .rodizio-item:last-child { border-bottom: none; }
+    .rodizio-item .quando { flex: 1; color: var(--texto-medio); }
+    .rodizio-item.agora .quando { color: var(--texto); font-weight: 700; }
+    .rodape { text-align: center; font-size: 12px; color: var(--texto-fraco); padding: 8px 0 24px; line-height: 1.5; }
+    .erro-link { max-width: 520px; margin: 60px auto; text-align: center; padding: 28px 22px; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="pub" id="conteudo" hidden>
+    <header class="pub-topo">
+      <div>
+        <h1>Seção da semana</h1>
+        <p id="subtitulo"></p>
+      </div>
+      <div class="nav-semana">
+        <button class="btn btn-mini" type="button" id="btnAnterior" aria-label="Semana anterior">&#8249;</button>
+        <span class="periodo" id="periodo"></span>
+        <button class="btn btn-mini" type="button" id="btnProxima" aria-label="Próxima semana">&#8250;</button>
+        <button class="btn btn-mini" type="button" id="btnHoje">Hoje</button>
+      </div>
+    </header>
+
+    <div class="aviso" id="avisoSemana" style="margin-bottom:12px"></div>
+
+    <div class="pub-grid">
+      <div class="card">
+        <div class="card-titulo"><h3>Mapa da loja</h3></div>
+        <svg id="mapaLoja" viewBox="0 0 600 545" role="img" aria-label="Planta da loja com as seções numeradas">
+          <rect x="0" y="0" width="590" height="495" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"></rect>
+          <g id="mapaZonas"></g>
+          <g id="mapaFixos"></g>
+        </svg>
+        <p class="dica" style="margin:12px 0 0">Toque em uma área do mapa ou em um nome para ver os detalhes.</p>
+      </div>
+
+      <div class="coluna">
+        <div class="card">
+          <div class="card-titulo"><h3>Escala da semana</h3><small id="rotuloEscala"></small></div>
+          <div class="lista-escala" id="listaEscala"></div>
+        </div>
+        <div class="card">
+          <div class="card-titulo"><h3>Detalhe da seção</h3></div>
+          <div id="detalheSecao"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titulo"><h3>Ver por pessoa</h3><small>próximas semanas</small></div>
+      <label for="selectPessoa" class="dica" style="display:block;margin-bottom:6px">Escolha um nome para ver onde essa pessoa estará.</label>
+      <select id="selectPessoa" class="pessoa-select"></select>
+      <div id="listaRodizio"></div>
+    </div>
+
+    <div class="rodape" id="rodape"></div>
+  </main>
+
+  <div class="card erro-link" id="erroLink" hidden>
+    <h2 style="margin:0 0 8px">Link inválido</h2>
+    <p style="margin:0;color:var(--texto-medio);line-height:1.5">Este link está incompleto ou foi alterado. Peça para quem compartilhou gerar um novo link na página Seção.</p>
+  </div>
+
+  <script src="secao-escala.js"></script>
+  <script src="secao-mapa.js"></script>
+  <script>
+    (function () {
+      const el = (id) => document.getElementById(id);
+
+      /* O conteudo vem inteiro no link (depois do #d=), validado e somente leitura. */
+      const hash = window.location.hash.replace(/^#/, "");
+      const parametro = new URLSearchParams(hash).get("d");
+      const lido = parametro ? Escala.lerCompartilhamento(parametro) : null;
+
+      if (!lido) {
+        el("erroLink").hidden = false;
+        return;
+      }
+
+      Escala.usarConfig(lido.config);
+      el("conteudo").hidden = false;
+
+      let semana = Escala.semanaDe(lido.semanaISO);
+      let selecionada = null;
+
+      const pad = (n) => String(n).padStart(2, "0");
+      const periodo = (s) => `${Escala.formatarCurto(s.inicioISO)} a ${Escala.formatarCurto(s.fimISO)}`;
+      const escala = () => Escala.escalaDaSemana(semana);
+      const dono = (secao) => escala().find((i) => i.secao === secao) || null;
+
+      function renderMapa() {
+        MapaLoja.desenharFixos(el("mapaFixos"));
+        MapaLoja.desenharZonas(el("mapaZonas"), { responsavelPor: dono, selecionada });
+      }
+
+      function renderEscala() {
+        const lista = el("listaEscala");
+        lista.textContent = "";
+        escala().forEach((item) => {
+          const botao = document.createElement("button");
+          botao.type = "button";
+          botao.className = "escala-item" + (selecionada === item.secao ? " selecionado" : "");
+          botao.dataset.secao = String(item.secao);
+
+          const num = document.createElement("span");
+          num.className = "escala-num";
+          num.style.background = item.cor.forte;
+          num.textContent = pad(item.secao);
+          const nome = document.createElement("span");
+          nome.className = "escala-nome";
+          nome.textContent = item.nome;
+
+          botao.appendChild(num);
+          botao.appendChild(nome);
+          lista.appendChild(botao);
+        });
+        el("rotuloEscala").textContent = periodo(semana);
+      }
+
+      function linhaDetalhe(rotulo, valor) {
+        const linha = document.createElement("div");
+        linha.className = "detalhe-linha";
+        const a = document.createElement("span");
+        a.textContent = rotulo;
+        const b = document.createElement("b");
+        b.textContent = valor;
+        linha.appendChild(a);
+        linha.appendChild(b);
+        return linha;
+      }
+
+      function renderDetalhe() {
+        const caixa = el("detalheSecao");
+        caixa.textContent = "";
+
+        if (selecionada === null) {
+          const p = document.createElement("p");
+          p.className = "detalhe-vazio";
+          p.textContent = "Toque em uma área do mapa ou em um nome da escala para ver quem responde por ela.";
+          caixa.appendChild(p);
+          return;
+        }
+
+        const item = dono(selecionada);
+        const pontos = MapaLoja.ZONAS.filter((z) => z.secao === selecionada);
+        const paredes = pontos.filter((z) => z.tipo === "parede").length;
+        const proxima = Escala.deslocarSemana(semana, 1);
+        const nomeProxima = Escala.obterConfig().vendedores[Escala.vendedorDaSecao(selecionada, proxima.indice)];
+
+        const topo = document.createElement("div");
+        topo.className = "detalhe-topo";
+        const num = document.createElement("div");
+        num.className = "detalhe-num";
+        num.style.background = item.cor.forte;
+        num.textContent = pad(item.secao);
+        const textos = document.createElement("div");
+        const nome = document.createElement("div");
+        nome.className = "detalhe-nome";
+        nome.textContent = item.nome;
+        const papel = document.createElement("div");
+        papel.className = "detalhe-papel";
+        papel.textContent = "Responsável nesta semana";
+        textos.appendChild(nome);
+        textos.appendChild(papel);
+        topo.appendChild(num);
+        topo.appendChild(textos);
+        caixa.appendChild(topo);
+
+        caixa.appendChild(linhaDetalhe("Pontos de exposição", String(pontos.length - paredes)));
+        caixa.appendChild(linhaDetalhe("Trechos de parede", String(paredes)));
+        caixa.appendChild(linhaDetalhe("Período", periodo(semana)));
+        caixa.appendChild(linhaDetalhe("Semana seguinte", nomeProxima));
+      }
+
+      function renderRodizio() {
+        const caixa = el("listaRodizio");
+        caixa.textContent = "";
+        const indicePessoa = Number(el("selectPessoa").value);
+        const cfg = Escala.obterConfig();
+        const atual = Escala.semanaAtual();
+
+        for (let passo = 0; passo < 6; passo += 1) {
+          const s = Escala.deslocarSemana(semana, passo);
+          const secao = Escala.secaoNaSemana(indicePessoa, s.indice, cfg);
+          const cor = Escala.corDaSecao(secao);
+
+          const linha = document.createElement("div");
+          linha.className = "rodizio-item" + (s.indice === atual.indice ? " agora" : "");
+          const num = document.createElement("span");
+          num.className = "escala-num";
+          num.style.background = cor.forte;
+          num.textContent = pad(secao);
+          const quando = document.createElement("span");
+          quando.className = "quando";
+          quando.textContent = `${Escala.formatarBR(s.inicioISO)} a ${Escala.formatarBR(s.fimISO)}`;
+          linha.appendChild(num);
+          linha.appendChild(quando);
+          if (s.indice === atual.indice) {
+            const pill = document.createElement("span");
+            pill.className = "pill laranja";
+            pill.textContent = "esta semana";
+            linha.appendChild(pill);
+          }
+          caixa.appendChild(linha);
+        }
+      }
+
+      function renderAviso() {
+        const diferenca = semana.indice - Escala.semanaAtual().indice;
+        const aviso = el("avisoSemana");
+        if (diferenca === 0) {
+          aviso.textContent = "";
+          return;
+        }
+        const q = Math.abs(diferenca);
+        const plural = q === 1 ? "semana" : "semanas";
+        aviso.textContent = `Você está vendo ${q} ${plural} ${diferenca > 0 ? "à frente" : "atrás"}. Toque em "Hoje" para voltar.`;
+      }
+
+      function renderTudo() {
+        el("periodo").textContent = periodo(semana);
+        renderAviso();
+        renderMapa();
+        renderEscala();
+        renderDetalhe();
+        renderRodizio();
+      }
+
+      function selecionar(secao) {
+        selecionada = selecionada === secao ? null : secao;
+        renderMapa();
+        renderEscala();
+        renderDetalhe();
+      }
+
+      /* Seletor de pessoas */
+      const select = el("selectPessoa");
+      Escala.obterConfig().vendedores.forEach((nome, indice) => {
+        const opcao = document.createElement("option");
+        opcao.value = String(indice);
+        opcao.textContent = nome;
+        select.appendChild(opcao);
+      });
+      select.addEventListener("change", renderRodizio);
+
+      el("mapaLoja").addEventListener("click", (e) => {
+        const zona = e.target.closest(".zona");
+        if (zona) selecionar(Number(zona.dataset.secao));
+      });
+      el("mapaLoja").addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const zona = e.target.closest(".zona");
+        if (zona) {
+          e.preventDefault();
+          selecionar(Number(zona.dataset.secao));
+        }
+      });
+      el("listaEscala").addEventListener("click", (e) => {
+        const botao = e.target.closest(".escala-item");
+        if (botao) selecionar(Number(botao.dataset.secao));
+      });
+
+      el("btnAnterior").addEventListener("click", () => { semana = Escala.deslocarSemana(semana, -1); renderTudo(); });
+      el("btnProxima").addEventListener("click", () => { semana = Escala.deslocarSemana(semana, 1); renderTudo(); });
+      el("btnHoje").addEventListener("click", () => { semana = Escala.semanaAtual(); renderTudo(); });
+
+      el("subtitulo").textContent = "Quem cuida de cada área da loja";
+      el("rodape").textContent = lido.geradoEm
+        ? `Escala gerada em ${Escala.formatarBR(lido.geradoEm)}. Se houve mudança depois dessa data, peça um link novo.`
+        : "Se a escala mudou, peça um link novo.";
+
+      renderTudo();
+    })();
+  </script>
+</body>
+</html>

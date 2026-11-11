@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Controle">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="app-shell.css">
+  <title>Minha seção</title>
+  <style>
+    [hidden] { display: none !important; }
+    .sec-abas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+    .sec-aba {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      min-height: 72px; padding: 12px 8px; border-radius: var(--raio);
+      border: 1px solid var(--borda-forte); background: #fff; color: var(--texto-medio);
+      font: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .sec-aba .ico { font-size: 22px; line-height: 1; }
+    .sec-aba:hover { transform: translateY(-2px); box-shadow: var(--sombra); }
+    .sec-aba.ativo { background: var(--laranja); border-color: var(--laranja); color: #fff; box-shadow: var(--sombra-forte); }
+    .sec-aba:focus-visible, .sec-icone:focus-visible { outline: 3px solid var(--laranja-borda); outline-offset: 2px; }
+
+    .sec-resumo { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .sec-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; align-items: start; }
+    @media (max-width: 900px) { .sec-grid { grid-template-columns: 1fr; } }
+    .sec-titulo { margin: 0 0 12px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-fraco); }
+    .sec-barra { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .sec-barra input[type="search"] { flex: 1 1 200px; min-width: 0; }
+    .sec-barra input[type="search"], .sec-barra select {
+      min-height: 42px; padding: 8px 12px; border: 1px solid var(--borda-forte);
+      border-radius: var(--raio-sm); background: #fff; font: inherit; color: var(--texto);
+    }
+    .sec-barra select { flex: 1 1 190px; min-width: 0; }
+    .sec-ajuda { font-size: 12px; color: var(--texto-fraco); line-height: 1.4; }
+
+    /* Estoque */
+    .sec-itens { display: flex; flex-direction: column; gap: 10px; }
+    .sec-item {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio);
+      box-shadow: var(--sombra); padding: 12px 14px;
+    }
+    .sec-item.baixo { border-color: #fcd34d; background: #fffdf5; }
+    .sec-item.zerado { border-color: #fecaca; background: #fff8f8; }
+    .sec-corpo { flex: 1 1 200px; min-width: 0; }
+    .sec-nome { font-weight: 800; font-size: 15px; overflow-wrap: anywhere; }
+    .sec-sub { font-size: 12.5px; color: var(--texto-medio); margin-top: 2px; overflow-wrap: anywhere; }
+    .sec-qtd { display: flex; align-items: center; gap: 6px; flex: none; }
+    .sec-qtd output { min-width: 42px; text-align: center; font-size: 20px; font-weight: 800; }
+    .sec-icone {
+      width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--borda-forte);
+      background: #fff; font-size: 18px; line-height: 1; cursor: pointer; flex: none; font-family: inherit;
+    }
+    .sec-icone:hover { background: var(--laranja-suave); }
+    .sec-acoes { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+    /* Tarefas */
+    .sec-progresso { margin-bottom: 18px; }
+    .sec-progresso strong { font-size: 15px; }
+    .sec-grupo { margin: 18px 0 8px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-fraco); }
+    .sec-tarefa {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio);
+      padding: 6px 8px 6px 14px; margin-bottom: 8px; box-shadow: var(--sombra);
+    }
+    .sec-tarefa.feita .sec-tarefa-txt { text-decoration: line-through; color: var(--texto-fraco); }
+    .sec-tarefa.atrasada { border-color: #fecaca; background: #fff8f8; }
+    .sec-tarefa label { flex: 1; display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; min-width: 0; }
+    .sec-tarefa input[type="checkbox"] { width: 22px; height: 22px; flex: none; accent-color: var(--laranja); }
+    .sec-tarefa-txt { overflow-wrap: anywhere; font-weight: 600; }
+    .sec-check-linha { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 600; color: var(--texto-medio); }
+    @media (max-width: 560px) {
+      .sec-abas { gap: 6px; }
+      .sec-qtd { width: 100%; justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>Minha seção</h1>
+    <p>Controle o estoque da sua seção e organize as tarefas do dia, da abertura ao fechamento.</p>
+  </div>
+
+  <div class="sec-abas" role="tablist" aria-label="Áreas da seção">
+    <button class="sec-aba ativo" type="button" role="tab" aria-selected="true" data-aba="estoque"><span class="ico">&#128230;</span>Estoque</button>
+    <button class="sec-aba" type="button" role="tab" aria-selected="false" data-aba="tarefas"><span class="ico">&#9989;</span>Tarefas</button>
+  </div>
+
+  <!-- ============================== ESTOQUE ============================== -->
+  <section id="aba-estoque" class="painel-tab ativo" role="tabpanel">
+    <div id="resumoEstoque" class="sec-resumo"></div>
+    <div class="sec-grid">
+      <div>
+      <form id="formReposicao" class="painel" novalidate autocomplete="off" style="margin-bottom:18px">
+        <h2 class="sec-titulo">Reposição rápida</h2>
+        <div class="campo">
+          <label for="rNome">Produto *</label>
+          <input id="rNome" type="text" maxlength="120" list="listaNomes" placeholder="Ex.: Camiseta básica preta">
+          <datalist id="listaNomes"></datalist>
+        </div>
+        <div class="form-grid">
+          <div class="campo">
+            <label for="rCor">Cor</label>
+            <input id="rCor" type="text" maxlength="30" placeholder="Ex.: Preto">
+          </div>
+          <div class="campo">
+            <label for="rCategoria">Categoria</label>
+            <select id="rCategoria"></select>
+          </div>
+        </div>
+        <div class="campo" style="margin-top:12px">
+          <label for="rGrade">Quantidade e tamanho *</label>
+          <input id="rGrade" type="text" maxlength="400" placeholder="Ex.: 1P, 2M, 3G  ou  1x40, 2x42">
+          <span class="sec-ajuda">Digite a quantidade seguida do tamanho, separando por vírgula. Cada tamanho é somado ao estoque do produto.</span>
+        </div>
+        <div id="previaGrade" class="sec-resumo" style="margin:10px 0 0" aria-live="polite"></div>
+        <div class="acoes" style="margin-top:14px">
+          <button class="btn btn-primario" type="submit">Repor estoque</button>
+          <button class="btn btn-neutro" type="button" id="btnLimparRep">Limpar</button>
+        </div>
+        <div id="statusRep" class="status" role="status"></div>
+      </form>
+
+      <form id="formItem" class="painel" novalidate autocomplete="off">
+        <h2 class="sec-titulo" id="tituloForm">Novo produto</h2>
+        <div id="bannerEdicao" class="aviso" hidden></div>
+        <div class="campo">
+          <label for="iNome">Produto *</label>
+          <input id="iNome" type="text" maxlength="120" placeholder="Ex.: Camiseta básica preta">
+        </div>
+        <div class="campo">
+          <label for="iCategoria">Categoria</label>
+          <select id="iCategoria"></select>
+        </div>
+        <div class="form-grid">
+          <div class="campo">
+            <label for="iTamanho">Tamanho</label>
+            <input id="iTamanho" type="text" maxlength="20" placeholder="Ex.: M ou 42">
+          </div>
+          <div class="campo">
+            <label for="iCor">Cor</label>
+            <input id="iCor" type="text" maxlength="30" placeholder="Ex.: Preto">
+          </div>
+          <div class="campo">
+            <label for="iQtd">Quantidade *</label>
+            <input id="iQtd" type="number" inputmode="numeric" min="0" max="100000" step="1" placeholder="0">
+          </div>
+          <div class="campo">
+            <label for="iMin">Estoque mínimo</label>
+            <input id="iMin" type="number" inputmode="numeric" min="0" max="100000" step="1" placeholder="0">
+          </div>
+        </div>
+        <span class="sec-ajuda">Quando a quantidade chegar ao mínimo, o produto aparece como “estoque baixo”.</span>
+        <div class="campo" style="margin-top:12px">
+          <label for="iLocal">Local na loja</label>
+          <input id="iLocal" type="text" maxlength="60" placeholder="Ex.: Arara 3 ou Prateleira B">
+        </div>
+        <div class="acoes" style="margin-top:16px">
+          <button class="btn btn-primario" type="submit" id="btnSalvarItem">Salvar produto</button>
+          <button class="btn btn-neutro" type="button" id="btnLimparItem">Limpar</button>
+          <button class="btn btn-perigo" type="button" id="btnExcluirItem" hidden>Excluir</button>
+        </div>
+        <div id="statusItem" class="status" role="status"></div>
+      </form>
+      </div>
+
+      <div>
+        <div class="sec-barra">
+          <input id="busca" type="search" placeholder="Buscar produto, cor, tamanho ou local" aria-label="Buscar no estoque">
+          <select id="filtroCat" aria-label="Filtrar por categoria"></select>
+          <select id="filtroSit" aria-label="Filtrar por situação">
+            <option value="todos">Todas as situações</option>
+            <option value="alerta">Baixo ou zerado</option>
+            <option value="baixo">Estoque baixo</option>
+            <option value="zerado">Zerado</option>
+            <option value="ok">Em dia</option>
+          </select>
+        </div>
+        <div id="listaEstoque" class="sec-itens"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== TAREFAS ============================== -->
+  <section id="aba-tarefas" class="painel-tab" role="tabpanel">
+    <div class="painel sec-progresso">
+      <div id="textoProgresso"><strong>Hoje</strong></div>
+      <div class="barra verde"><span id="barraProgresso" style="width:0%"></span></div>
+    </div>
+
+    <div class="sec-grid">
+      <form id="formTarefa" class="painel" novalidate autocomplete="off">
+        <h2 class="sec-titulo">Nova tarefa</h2>
+        <div class="campo">
+          <label for="tTitulo">O que precisa ser feito? *</label>
+          <input id="tTitulo" type="text" maxlength="140" placeholder="Ex.: Repor tênis número 40">
+        </div>
+        <div class="campo">
+          <label for="tGrupo">Momento do dia</label>
+          <select id="tGrupo"></select>
+        </div>
+        <div class="campo sec-check-linha">
+          <input id="tRepete" type="checkbox" style="width:20px;height:20px;accent-color:var(--laranja)">
+          <label for="tRepete" style="margin:0">Repetir todos os dias (checklist)</label>
+        </div>
+        <div class="campo" id="campoPrazo">
+          <label for="tPrazo">Prazo (opcional)</label>
+          <input id="tPrazo" type="date">
+        </div>
+        <div class="acoes" style="margin-top:16px">
+          <button class="btn btn-primario" type="submit">Adicionar tarefa</button>
+        </div>
+        <div id="statusTarefa" class="status" role="status"></div>
+        <hr style="border:0;border-top:1px solid var(--borda);margin:16px 0">
+        <button class="btn btn-neutro btn-mini" type="button" id="btnPadrao">Adicionar checklist padrão</button>
+        <button class="btn btn-neutro btn-mini" type="button" id="btnLimparFeitas" style="margin-top:8px">Remover avulsas concluídas</button>
+      </form>
+
+      <div id="listaTarefas"></div>
+    </div>
+  </section>
+
+  <script src="app-config.js"></script>
+  <script src="transitions.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="app-data.js"></script>
+  <script src="sec-data.js"></script>
+  <script src="sec-shell.js"></script>
+  <script src="lembretes.js"></script>
+  <script>
+    const sessao = AuthDB.exigirLogin();
+
+    const estado = { aba: "estoque", editandoId: null, excluirArmado: false };
+    const $ = (id) => document.getElementById(id);
+
+    function esc(valor) {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function normalizar(texto) {
+      return String(texto || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    }
+
+    function vazio(texto) {
+      return `<div class="painel vazio">${esc(texto)}</div>`;
+    }
+
+    function dataBR(iso) {
+      const [a, m, d] = String(iso).split("-");
+      return a && m && d ? `${d}/${m}/${a}` : "";
+    }
+
+    function mostrarStatus(id, texto, tipo) {
+      const alvo = $(id);
+      alvo.textContent = texto;
+      alvo.className = `status ${tipo || ""}`.trim();
+    }
+
+    /* -------------------------------- Abas --------------------------------- */
+
+    function mostrarAba(nome) {
+      estado.aba = nome;
+      document.querySelectorAll(".sec-aba").forEach((b) => {
+        const ativo = b.dataset.aba === nome;
+        b.classList.toggle("ativo", ativo);
+        b.setAttribute("aria-selected", String(ativo));
+      });
+      ["estoque", "tarefas"].forEach((a) => $(`aba-${a}`).classList.toggle("ativo", a === nome));
+      if (nome === "estoque") renderEstoque();
+      if (nome === "tarefas") renderTarefas();
+    }
+
+    /* ------------------------------- Estoque -------------------------------- */
+
+    const ROTULO_SIT = { ok: "Em dia", baixo: "Estoque baixo", zerado: "Zerado" };
+    const CLASSE_SIT = { ok: "ok", baixo: "wait", zerado: "off" };
+
+    function limparFormItem() {
+      $("formItem").reset();
+      $("iCategoria").value = SEC.CATEGORIAS[0];
+      estado.editandoId = null;
+      estado.excluirArmado = false;
+      $("bannerEdicao").hidden = true;
+      $("btnExcluirItem").hidden = true;
+      $("btnExcluirItem").textContent = "Excluir";
+      $("btnSalvarItem").textContent = "Salvar produto";
+      $("tituloForm").textContent = "Novo produto";
+    }
+
+    function editarItem(id) {
+      const item = SEC.buscarItem(id);
+      if (!item) return;
+      limparFormItem();
+      estado.editandoId = item.id;
+      $("iNome").value = item.nome;
+      $("iCategoria").value = item.categoria;
+      $("iTamanho").value = item.tamanho;
+      $("iCor").value = item.cor;
+      $("iQtd").value = item.quantidade;
+      $("iMin").value = item.minimo || "";
+      $("iLocal").value = item.local;
+      $("bannerEdicao").textContent = `Editando: ${item.nome}`;
+      $("bannerEdicao").hidden = false;
+      $("btnExcluirItem").hidden = false;
+      $("btnSalvarItem").textContent = "Salvar alterações";
+      $("tituloForm").textContent = "Editar produto";
+      mostrarStatus("statusItem", "", "");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function enviarItem(evento) {
+      evento.preventDefault();
+      const resultado = SEC.salvarItem({
+        nome: $("iNome").value,
+        categoria: $("iCategoria").value,
+        tamanho: $("iTamanho").value,
+        cor: $("iCor").value,
+        quantidade: $("iQtd").value,
+        minimo: $("iMin").value,
+        local: $("iLocal").value
+      }, estado.editandoId);
+
+      if (!resultado.ok) {
+        mostrarStatus("statusItem", resultado.mensagem, "error");
+        return;
+      }
+      const nome = resultado.item.nome;
+      limparFormItem();
+      mostrarStatus("statusItem", resultado.novo ? `${nome} adicionado ao estoque.` : `${nome} atualizado.`, "ok");
+      atualizarNomes();
+      renderEstoque();
+    }
+
+    function excluirItem() {
+      if (!estado.editandoId) return;
+      if (!estado.excluirArmado) {
+        estado.excluirArmado = true;
+        $("btnExcluirItem").textContent = "Confirmar exclusão";
+        mostrarStatus("statusItem", "Clique de novo para excluir este produto do estoque.", "error");
+        return;
+      }
+      const item = SEC.buscarItem(estado.editandoId);
+      SEC.removerItem(estado.editandoId);
+      limparFormItem();
+      mostrarStatus("statusItem", `${item ? item.nome : "Produto"} excluído.`, "ok");
+      renderEstoque();
+    }
+
+    function itemHTML(item) {
+      const detalhes = [item.categoria, item.tamanho && `Tam. ${item.tamanho}`, item.cor, item.local && `📍 ${item.local}`]
+        .filter(Boolean).map(esc).join(" · ");
+      const minimo = item.minimo > 0 ? `mínimo ${item.minimo}` : "sem mínimo";
+      const repor = item.situacao !== "ok"
+        ? `<button class="btn btn-neutro btn-mini" type="button" data-acao="repor" data-id="${esc(item.id)}">Criar tarefa de reposição</button>`
+        : "";
+      return `
+        <article class="sec-item ${item.situacao === "ok" ? "" : item.situacao}">
+          <div class="sec-corpo">
+            <div class="sec-nome">${esc(item.nome)}</div>
+            <div class="sec-sub">${detalhes}</div>
+            <div class="sec-acoes" style="margin-top:8px">
+              <span class="pill ${CLASSE_SIT[item.situacao]}">${ROTULO_SIT[item.situacao]}</span>
+              <span class="pill">${esc(minimo)}</span>
+              ${repor}
+            </div>
+          </div>
+          <div class="sec-qtd" role="group" aria-label="Quantidade de ${esc(item.nome)}">
+            <button class="sec-icone" type="button" data-acao="menos" data-id="${esc(item.id)}" aria-label="Tirar uma unidade">&minus;</button>
+            <output aria-live="polite">${item.quantidade}</output>
+            <button class="sec-icone" type="button" data-acao="mais" data-id="${esc(item.id)}" aria-label="Adicionar uma unidade">+</button>
+          </div>
+          <button class="btn btn-neutro btn-mini" type="button" data-acao="grade" data-id="${esc(item.id)}" title="Repor este produto por grade">Repor</button>
+          <button class="sec-icone" type="button" data-acao="editar" data-id="${esc(item.id)}" title="Editar" aria-label="Editar ${esc(item.nome)}">&#9998;</button>
+        </article>`;
+    }
+
+    function renderEstoque() {
+      const todos = SEC.listarEstoque();
+      const r = SEC.resumoEstoque();
+      $("resumoEstoque").innerHTML = `
+        <span class="pill laranja">${r.produtos} produto${r.produtos === 1 ? "" : "s"}</span>
+        <span class="pill">${r.pecas} peça${r.pecas === 1 ? "" : "s"} no total</span>
+        <span class="pill ${r.baixo ? "wait" : ""}">${r.baixo} com estoque baixo</span>
+        <span class="pill ${r.zerado ? "off" : ""}">${r.zerado} zerado${r.zerado === 1 ? "" : "s"}</span>`;
+
+      const termo = normalizar($("busca").value.trim());
+      const cat = $("filtroCat").value;
+      const sit = $("filtroSit").value;
+
+      const lista = todos.filter((item) => {
+        if (cat !== "todas" && item.categoria !== cat) return false;
+        if (sit === "alerta" && item.situacao === "ok") return false;
+        if (sit !== "todos" && sit !== "alerta" && item.situacao !== sit) return false;
+        return !termo || normalizar([item.nome, item.cor, item.tamanho, item.local].join(" ")).includes(termo);
+      });
+
+      if (!todos.length) {
+        $("listaEstoque").innerHTML = vazio("Nenhum produto no estoque ainda. Use o formulário para adicionar o primeiro.");
+      } else {
+        $("listaEstoque").innerHTML = lista.length ? lista.map(itemHTML).join("") : vazio("Nenhum produto encontrado com esses filtros.");
+      }
+    }
+
+    /* --------------------------- Reposicao por grade ------------------------- */
+
+    function atualizarPreviaGrade() {
+      const texto = $("rGrade").value.trim();
+      const alvo = $("previaGrade");
+      if (!texto) { alvo.innerHTML = ""; return; }
+      const grade = SEC.lerGrade(texto);
+      if (!grade.ok) {
+        alvo.innerHTML = `<span class="pill wait">${esc(grade.mensagem)}</span>`;
+        return;
+      }
+      alvo.innerHTML = grade.itens.map((i) => `<span class="pill laranja">+${i.quantidade} ${esc(i.tamanho)}</span>`).join("") +
+        `<span class="pill">${grade.total} peça${grade.total === 1 ? "" : "s"}</span>`;
+    }
+
+    function atualizarNomes() {
+      $("listaNomes").innerHTML = SEC.nomesDeProdutos().map((n) => `<option value="${esc(n)}"></option>`).join("");
+    }
+
+    function limparReposicao() {
+      $("formReposicao").reset();
+      $("rCategoria").value = SEC.CATEGORIAS[0];
+      $("previaGrade").innerHTML = "";
+    }
+
+    function prepararReposicao(id) {
+      const item = SEC.buscarItem(id);
+      if (!item) return;
+      limparReposicao();
+      $("rNome").value = item.nome;
+      $("rCor").value = item.cor;
+      $("rCategoria").value = item.categoria;
+      mostrarStatus("statusRep", `Repondo ${item.nome}${item.cor ? ` (${item.cor})` : ""}. Digite a grade.`, "ok");
+      $("formReposicao").scrollIntoView({ behavior: "smooth", block: "start" });
+      $("rGrade").focus();
+    }
+
+    function enviarReposicao(evento) {
+      evento.preventDefault();
+      const r = SEC.reporGrade({
+        nome: $("rNome").value,
+        cor: $("rCor").value,
+        categoria: $("rCategoria").value,
+        grade: $("rGrade").value
+      });
+      if (!r.ok) {
+        mostrarStatus("statusRep", r.mensagem, "error");
+        return;
+      }
+      const partes = r.itens.map((i) => `${i.quantidade} ${i.tamanho}`).join(", ");
+      const novos = r.criados ? ` (${r.criados} tamanho${r.criados === 1 ? "" : "s"} novo${r.criados === 1 ? "" : "s"})` : "";
+      limparReposicao();
+      mostrarStatus("statusRep", `Reposição lançada: ${partes} = ${r.total} peça${r.total === 1 ? "" : "s"}${novos}.`, "ok");
+      atualizarNomes();
+      renderEstoque();
+    }
+
+    function configurarReposicao() {
+      $("rCategoria").innerHTML = SEC.CATEGORIAS.map((c) => `<option>${esc(c)}</option>`).join("");
+      $("rGrade").addEventListener("input", atualizarPreviaGrade);
+      $("formReposicao").addEventListener("submit", enviarReposicao);
+      $("btnLimparRep").addEventListener("click", () => { limparReposicao(); mostrarStatus("statusRep", "", ""); });
+      atualizarNomes();
+    }
+
+    function configurarEstoque() {
+      $("iCategoria").innerHTML = SEC.CATEGORIAS.map((c) => `<option>${esc(c)}</option>`).join("");
+      $("filtroCat").innerHTML = '<option value="todas">Todas as categorias</option>' +
+        SEC.CATEGORIAS.map((c) => `<option>${esc(c)}</option>`).join("");
+
+      $("formItem").addEventListener("submit", enviarItem);
+      $("btnLimparItem").addEventListener("click", () => { limparFormItem(); mostrarStatus("statusItem", "", ""); });
+      $("btnExcluirItem").addEventListener("click", excluirItem);
+      ["busca", "filtroCat", "filtroSit"].forEach((id) => $(id).addEventListener("input", renderEstoque));
+    }
+
+    /* ------------------------------- Tarefas -------------------------------- */
+
+    function tarefaHTML(t) {
+      const etiquetas = [];
+      if (t.repete) etiquetas.push('<span class="pill">Todo dia</span>');
+      if (t.prazo) etiquetas.push(`<span class="pill ${t.atrasada ? "off" : ""}">${t.atrasada ? "Atrasada · " : "Até "}${esc(dataBR(t.prazo))}</span>`);
+      return `
+        <div class="sec-tarefa ${t.feita ? "feita" : ""} ${t.atrasada ? "atrasada" : ""}">
+          <label>
+            <input type="checkbox" data-acao="marcar" data-id="${esc(t.id)}" ${t.feita ? "checked" : ""}>
+            <span class="sec-tarefa-txt">${esc(t.titulo)}</span>
+            ${etiquetas.join("")}
+          </label>
+          <button class="sec-icone" type="button" data-acao="apagar" data-id="${esc(t.id)}" title="Apagar tarefa" aria-label="Apagar ${esc(t.titulo)}">&times;</button>
+        </div>`;
+    }
+
+    function renderTarefas() {
+      const hoje = SEC.hojeISO();
+      const todas = SEC.listarTarefas();
+      const r = SEC.resumoTarefasHoje();
+      const pct = r.total ? Math.round((r.feitas / r.total) * 100) : 0;
+
+      $("textoProgresso").innerHTML = r.total
+        ? `<strong>Hoje: ${r.feitas} de ${r.total} concluída${r.total === 1 ? "" : "s"} (${pct}%)</strong>${r.atrasadas ? ` <span class="pill off">${r.atrasadas} atrasada${r.atrasadas === 1 ? "" : "s"}</span>` : ""}`
+        : "<strong>Hoje</strong> · nenhuma tarefa ainda";
+      $("barraProgresso").style.width = `${pct}%`;
+
+      // Avulsas futuras ficam em "Próximas"; o resto aparece por momento do dia.
+      const doDia = todas.filter((t) => t.repete || t.feita || !t.prazo || t.prazo <= hoje);
+      const proximas = todas.filter((t) => !t.repete && !t.feita && t.prazo && t.prazo > hoje);
+
+      if (!todas.length) {
+        $("listaTarefas").innerHTML = vazio("Nenhuma tarefa ainda. Adicione uma ao lado ou use o checklist padrão para começar.");
+        return;
+      }
+
+      let html = "";
+      SEC.GRUPOS.forEach((grupo) => {
+        const itens = doDia.filter((t) => t.grupo === grupo);
+        if (!itens.length) return;
+        html += `<div class="sec-grupo">${esc(grupo)}</div>${itens.map(tarefaHTML).join("")}`;
+      });
+      if (proximas.length) {
+        html += `<div class="sec-grupo">Próximas</div>${proximas.map(tarefaHTML).join("")}`;
+      }
+      $("listaTarefas").innerHTML = html;
+    }
+
+    function configurarTarefas() {
+      $("tGrupo").innerHTML = SEC.GRUPOS.map((g) => `<option>${esc(g)}</option>`).join("");
+      $("tGrupo").value = "Organização";
+
+      $("tRepete").addEventListener("change", () => { $("campoPrazo").hidden = $("tRepete").checked; });
+
+      $("formTarefa").addEventListener("submit", (evento) => {
+        evento.preventDefault();
+        const resultado = SEC.salvarTarefa({
+          titulo: $("tTitulo").value,
+          grupo: $("tGrupo").value,
+          repete: $("tRepete").checked,
+          prazo: $("tPrazo").value
+        });
+        if (!resultado.ok) {
+          mostrarStatus("statusTarefa", resultado.mensagem, "error");
+          return;
+        }
+        $("tTitulo").value = "";
+        $("tPrazo").value = "";
+        mostrarStatus("statusTarefa", "Tarefa adicionada.", "ok");
+        renderTarefas();
+      });
+
+      $("btnPadrao").addEventListener("click", () => {
+        const n = SEC.adicionarChecklistPadrao();
+        mostrarStatus("statusTarefa", n ? `${n} tarefa${n === 1 ? "" : "s"} do checklist padrão adicionada${n === 1 ? "" : "s"}.` : "O checklist padrão já está na sua lista.", "ok");
+        renderTarefas();
+      });
+
+      $("btnLimparFeitas").addEventListener("click", () => {
+        const n = SEC.limparConcluidas();
+        mostrarStatus("statusTarefa", n ? `${n} tarefa${n === 1 ? "" : "s"} removida${n === 1 ? "" : "s"}.` : "Não há tarefas avulsas concluídas.", "ok");
+        renderTarefas();
+      });
+    }
+
+    /* -------------------------------- Inicio -------------------------------- */
+
+    function iniciar() {
+      document.querySelectorAll(".sec-aba").forEach((b) => b.addEventListener("click", () => mostrarAba(b.dataset.aba)));
+
+      document.addEventListener("click", (evento) => {
+        const el = evento.target.closest("[data-acao]");
+        if (!el) return;
+        const id = el.dataset.id;
+        switch (el.dataset.acao) {
+          case "mais": SEC.ajustarQuantidade(id, 1); renderEstoque(); break;
+          case "menos": SEC.ajustarQuantidade(id, -1); renderEstoque(); break;
+          case "editar": editarItem(id); break;
+          case "grade": prepararReposicao(id); break;
+          case "repor": {
+            const item = SEC.buscarItem(id);
+            if (item) {
+              const r = SEC.criarTarefaReposicao(item);
+              mostrarStatus("statusItem", r.jaExistia ? "Já existe uma tarefa de reposição pendente para este produto." : "Tarefa de reposição criada na aba Tarefas.", "ok");
+            }
+            break;
+          }
+          case "apagar": SEC.removerTarefa(id); renderTarefas(); break;
+        }
+      });
+
+      // Checkbox usa "change" para funcionar bem no toque e no teclado.
+      document.addEventListener("change", (evento) => {
+        const el = evento.target.closest('[data-acao="marcar"]');
+        if (el) {
+          SEC.alternarTarefa(el.dataset.id);
+          renderTarefas();
+        }
+      });
+
+      configurarEstoque();
+      configurarReposicao();
+      configurarTarefas();
+      limparFormItem();
+      renderEstoque();
+    }
+
+    if (sessao) {
+      iniciar();
+    }
+  </script>
+</body>
+</html>

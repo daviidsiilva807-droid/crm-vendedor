@@ -54,7 +54,109 @@
     }
   }
 
+  /* Trocas feitas so numa semana: { "<indiceSemana>": [vendedor da secao 1, ..., da secao 8] }.
+     So aceita permutacoes validas de 0 a 7; o resto e descartado. */
+  function permutacaoValida(lista) {
+    if (!Array.isArray(lista) || lista.length !== TOTAL_SECOES) {
+      return false;
+    }
+    const vistos = new Set(lista);
+    return vistos.size === TOTAL_SECOES && lista.every((n) => Number.isInteger(n) && n >= 0 && n < TOTAL_SECOES);
+  }
+
+  function lerTrocas(bruto) {
+    const limpo = {};
+    if (bruto && typeof bruto === "object") {
+      Object.keys(bruto).forEach((chaveSemana) => {
+        if (/^-?\d{1,5}$/.test(chaveSemana) && permutacaoValida(bruto[chaveSemana])) {
+          limpo[chaveSemana] = bruto[chaveSemana].slice();
+        }
+      });
+    }
+    return limpo;
+  }
+
+  /* Config externa (pagina compartilhada): quando definida, substitui a do navegador
+     e nada e gravado. */
+  let configExterna = null;
+
+  function usarConfig(config) {
+    configExterna = config || null;
+  }
+
+  /* ---------------------- Link de compartilhamento ---------------------- */
+  const LIMITE_LINK = 4000;
+
+  function paraBase64Url(texto) {
+    const bytes = new TextEncoder().encode(texto);
+    let binario = "";
+    bytes.forEach((b) => { binario += String.fromCharCode(b); });
+    return btoa(binario).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function deBase64Url(texto) {
+    const padrao = String(texto).replace(/-/g, "+").replace(/_/g, "/");
+    const completo = padrao + "=".repeat((4 - (padrao.length % 4)) % 4);
+    const binario = atob(completo);
+    const bytes = Uint8Array.from(binario, (c) => c.charCodeAt(0));
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  }
+
+  function dataISOValida(texto) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(texto || "")) && Number.isFinite(paraUTC(texto));
+  }
+
+  /* Gera o texto que vai depois de "#d=" no link. So nomes, ancora e trocas:
+     nada pessoal (como "quem e voce") vai junto. */
+  function gerarCompartilhamento(semana) {
+    const cfg = obterConfig();
+    const dados = {
+      v: 1,
+      n: cfg.vendedores,
+      a: cfg.ancoraISO,
+      t: cfg.trocas,
+      w: (semana || semanaAtual(cfg)).inicioISO,
+      g: hojeISO()
+    };
+    return paraBase64Url(JSON.stringify(dados));
+  }
+
+  /* Le e valida o texto de um link. Devolve null se qualquer coisa estiver errada. */
+  function lerCompartilhamento(texto) {
+    try {
+      const bruto = String(texto || "");
+      if (!bruto || bruto.length > LIMITE_LINK || !/^[A-Za-z0-9_-]+$/.test(bruto)) {
+        return null;
+      }
+      const dados = JSON.parse(deBase64Url(bruto));
+      if (!dados || dados.v !== 1 || !Array.isArray(dados.n) || dados.n.length !== TOTAL_SECOES) {
+        return null;
+      }
+
+      const vendedores = dados.n.map((nome) =>
+        String(nome === null || nome === undefined ? "" : nome)
+          .replace(/[\u0000-\u001f\u007f<>]/g, "")
+          .trim()
+          .slice(0, 24)
+      );
+      if (vendedores.some((nome) => !nome) || !dataISOValida(dados.a) || !dataISOValida(dados.w)) {
+        return null;
+      }
+
+      return {
+        config: { vendedores, euIndice: -1, trocas: lerTrocas(dados.t), ancoraISO: dados.a },
+        semanaISO: dados.w,
+        geradoEm: dataISOValida(dados.g) ? dados.g : ""
+      };
+    } catch (erro) {
+      return null;
+    }
+  }
+
   function obterConfig() {
+    if (configExterna) {
+      return configExterna;
+    }
     const salvo = lerConfigBruta() || {};
     const vendedores = VENDEDORES_PADRAO.map((padrao, indice) => {
       const nome = Array.isArray(salvo.vendedores) ? String(salvo.vendedores[indice] || "").trim() : "";
@@ -68,11 +170,15 @@
     return {
       vendedores,
       euIndice,
+      trocas: lerTrocas(salvo.trocas),
       ancoraISO: /^\d{4}-\d{2}-\d{2}$/.test(salvo.ancoraISO || "") ? salvo.ancoraISO : ANCORA_PADRAO
     };
   }
 
   function salvarConfig(parcial) {
+    if (configExterna) {
+      return configExterna; // modo somente leitura (pagina compartilhada)
+    }
     const novo = Object.assign({}, obterConfig(), parcial || {});
     localStorage.setItem(chave(), JSON.stringify(novo));
     return novo;
@@ -152,9 +258,36 @@
     return modulo(indice + indiceSemanaAlvo, TOTAL_SECOES) + 1;
   }
 
-  /* Posicao na lista de vendedores responsavel pela secao informada. */
+  /* Posicao na lista de vendedores responsavel pela secao informada (rodizio puro). */
   function indiceDaSecao(secao, indiceSemanaAlvo) {
     return modulo(secao - 1 - indiceSemanaAlvo, TOTAL_SECOES);
+  }
+
+  /* Quem responde por cada secao na semana: [vendedor da secao 1, ..., da secao 8].
+     Usa a troca feita so naquela semana, se existir; senao, o rodizio. */
+  function ordemDaSemana(indiceSemanaAlvo, config) {
+    const cfg = config || obterConfig();
+    const troca = cfg.trocas[String(indiceSemanaAlvo)];
+    if (troca) {
+      return troca.slice();
+    }
+    const lista = [];
+    for (let secao = 1; secao <= TOTAL_SECOES; secao += 1) {
+      lista.push(indiceDaSecao(secao, indiceSemanaAlvo));
+    }
+    return lista;
+  }
+
+  function vendedorDaSecao(secao, indiceSemanaAlvo, config) {
+    return ordemDaSemana(indiceSemanaAlvo, config)[secao - 1];
+  }
+
+  function secaoNaSemana(indiceVendedor, indiceSemanaAlvo, config) {
+    return ordemDaSemana(indiceSemanaAlvo, config).indexOf(indiceVendedor) + 1;
+  }
+
+  function semanaTemTroca(indiceSemanaAlvo, config) {
+    return Boolean((config || obterConfig()).trocas[String(indiceSemanaAlvo)]);
   }
 
   function corDaSecao(secao) {
@@ -168,7 +301,7 @@
 
     const lista = [];
     for (let secao = 1; secao <= TOTAL_SECOES; secao += 1) {
-      const indice = indiceDaSecao(secao, alvo.indice);
+      const indice = vendedorDaSecao(secao, alvo.indice, cfg);
       lista.push({
         secao,
         indice,
@@ -187,7 +320,7 @@
       return null;
     }
     const alvo = semana || semanaAtual(cfg);
-    const secao = secaoDoVendedor(cfg.euIndice, alvo.indice);
+    const secao = secaoNaSemana(cfg.euIndice, alvo.indice, cfg);
     return {
       secao,
       indice: cfg.euIndice,
@@ -213,11 +346,81 @@
       const semana = deslocarSemana(base, passo);
       lista.push({
         semana,
-        secao: secaoDoVendedor(cfg.euIndice, semana.indice),
+        secao: secaoNaSemana(cfg.euIndice, semana.indice, cfg),
         atual: passo === 0
       });
     }
     return lista;
+  }
+
+  /* Troca, so nesta semana, quem esta nas secoes A e B. */
+  function trocarNaSemana(semana, secaoA, secaoB) {
+    if (!Number.isInteger(secaoA) || !Number.isInteger(secaoB) || secaoA === secaoB ||
+        secaoA < 1 || secaoB < 1 || secaoA > TOTAL_SECOES || secaoB > TOTAL_SECOES) {
+      return null;
+    }
+    const cfg = obterConfig();
+    const ordem = ordemDaSemana(semana.indice, cfg);
+    const aux = ordem[secaoA - 1];
+    ordem[secaoA - 1] = ordem[secaoB - 1];
+    ordem[secaoB - 1] = aux;
+
+    const trocas = Object.assign({}, cfg.trocas);
+    const padrao = ordemDaSemana(semana.indice, Object.assign({}, cfg, { trocas: {} }));
+    if (ordem.every((v, i) => v === padrao[i])) {
+      delete trocas[String(semana.indice)]; // voltou ao normal
+    } else {
+      trocas[String(semana.indice)] = ordem;
+    }
+    return salvarConfig({ trocas });
+  }
+
+  /* Desfaz a troca feita so nesta semana. */
+  function restaurarSemana(semana) {
+    const trocas = Object.assign({}, obterConfig().trocas);
+    delete trocas[String(semana.indice)];
+    return salvarConfig({ trocas });
+  }
+
+  /* Troca a ordem do rodizio: quem estava na secao A passa para a B e vice-versa
+     nesta semana, e o rodizio continua girando a partir dai (vale para todas as
+     semanas sem troca propria). Quem e "voce" acompanha a pessoa. */
+  function trocarOrdemRodizio(semana, secaoA, secaoB) {
+    if (!Number.isInteger(secaoA) || !Number.isInteger(secaoB) || secaoA === secaoB ||
+        secaoA < 1 || secaoB < 1 || secaoA > TOTAL_SECOES || secaoB > TOTAL_SECOES) {
+      return null;
+    }
+    const cfg = obterConfig();
+    return trocarPosicoes(
+      vendedorDaSecao(secaoA, semana.indice, cfg),
+      vendedorDaSecao(secaoB, semana.indice, cfg)
+    );
+  }
+
+  /* Troca duas posicoes (numeracao) da lista de vendedores. As pessoas trocam de
+     lugar no rodizio; trocas de semana e "quem e voce" acompanham cada pessoa. */
+  function trocarPosicoes(iA, iB) {
+    const posicaoValida = (n) => Number.isInteger(n) && n >= 0 && n < TOTAL_SECOES;
+    if (!posicaoValida(iA) || !posicaoValida(iB) || iA === iB) {
+      return null;
+    }
+    const cfg = obterConfig();
+
+    const vendedores = cfg.vendedores.slice();
+    vendedores[iA] = cfg.vendedores[iB];
+    vendedores[iB] = cfg.vendedores[iA];
+
+    const troca = (n) => (n === iA ? iB : n === iB ? iA : n);
+    const trocas = {};
+    Object.keys(cfg.trocas).forEach((k) => {
+      trocas[k] = cfg.trocas[k].map(troca);
+    });
+
+    return salvarConfig({
+      vendedores,
+      euIndice: cfg.euIndice < 0 ? cfg.euIndice : troca(cfg.euIndice),
+      trocas
+    });
   }
 
   /* Dias que faltam para a troca de secao (fim da semana atual). */
@@ -242,6 +445,16 @@
     escalaDaSemana,
     secaoDoVendedor,
     indiceDaSecao,
+    vendedorDaSecao,
+    secaoNaSemana,
+    semanaTemTroca,
+    trocarNaSemana,
+    restaurarSemana,
+    trocarOrdemRodizio,
+    trocarPosicoes,
+    usarConfig,
+    gerarCompartilhamento,
+    lerCompartilhamento,
     corDaSecao,
     minhaSecao,
     meuRodizio,
